@@ -1,11 +1,12 @@
-'''resnet in PyTorch.
+# -*- coding: utf-8 -*-
 
-For Pre-activation resnet, see 'preact_resnet.py'.
+"""ResNet 系列模型定义，移植自 PyTorch 官方实现并适配联邦学习场景。
 
-Reference:
-[1] Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun
-    Deep Residual Learning for Image Recognition. arXiv:1512.03385
-'''
+参考论文：
+    [1] Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun,
+        "Deep Residual Learning for Image Recognition." arXiv:1512.03385
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -13,10 +14,19 @@ from fl.models import model_registry
 
 
 class BasicBlock(nn.Module):
+    """ResNet 基础残差块，适用于 ResNet18/34 等浅层网络。"""
+
     expansion = 1
 
     def __init__(self, in_planes, planes, stride=1):
-        super(BasicBlock, self).__init__()
+        """构造两层 3×3 卷积组成的残差单元，支持下采样。
+
+        参数:
+            in_planes (int): 输入通道数。
+            planes (int): 输出通道数。
+            stride (int): 第一层卷积的步幅，用于下采样。
+        """
+        super().__init__()
         self.conv1 = nn.Conv2d(
             in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
@@ -33,6 +43,7 @@ class BasicBlock(nn.Module):
             )
 
     def forward(self, x):
+        """前向传播：残差分支 + Shortcut 相加后 ReLU。"""
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.bn2(self.conv2(out))
         out += self.shortcut(x)
@@ -41,10 +52,13 @@ class BasicBlock(nn.Module):
 
 
 class Bottleneck(nn.Module):
+    """ResNet 瓶颈残差块，适用于 ResNet50/101/152 等深层网络。"""
+
     expansion = 4
 
     def __init__(self, in_planes, planes, stride=1):
-        super(Bottleneck, self).__init__()
+        """构造“1×1→3×3→1×1”三层卷积的瓶颈结构。"""
+        super().__init__()
         self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3,
@@ -63,6 +77,7 @@ class Bottleneck(nn.Module):
             )
 
     def forward(self, x):
+        """前向传播：瓶颈结构残差加和。"""
         out = F.relu(self.bn1(self.conv1(x)))
         out = F.relu(self.bn2(self.conv2(out)))
         out = self.bn3(self.conv3(out))
@@ -72,10 +87,19 @@ class Bottleneck(nn.Module):
 
 
 class resnet(nn.Module):
+    """通用 ResNet 构造器，参数化 block 类型与每层数量。"""
+
     def __init__(self, block, num_blocks, num_classes=10):
-        super(resnet, self).__init__()
+        """构建对应深度的 ResNet 网络。
+
+        参数:
+            block (nn.Module): 基础块类型（BasicBlock 或 Bottleneck）。
+            num_blocks (List[int]): 每个 stage 的 block 数量。
+            num_classes (int): 分类类别数。
+        """
+        super().__init__()
         self.in_planes = 64
-        # The first convolutional kernel size is modified to 3x3 with stride 1, compared with standard ResNet18
+        # 首层卷积采用 3×3 kernel、stride=1，适配 32×32 图像（如 CIFAR）。
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3,
                                stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
@@ -86,6 +110,7 @@ class resnet(nn.Module):
         self.linear = nn.Linear(512*block.expansion, num_classes)
 
     def _make_layer(self, block, planes, num_blocks, stride):
+        """堆叠指定数量的 residual block，首块可能下采样。"""
         strides = [stride] + [1]*(num_blocks-1)
         layers = []
         for stride in strides:
@@ -94,6 +119,7 @@ class resnet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+        """标准 ResNet 前向流程：conv→4 个 stage→平均池化→全连接。"""
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.layer1(out)
         out = self.layer2(out)
@@ -105,34 +131,45 @@ class resnet(nn.Module):
         return out
 
 
+# 注册常见 ResNet 架构
 @model_registry
 def resnet18(num_classes):
+    """返回 ResNet-18 模型实例（BasicBlock，层配置 [2,2,2,2]）。"""
     return resnet(BasicBlock, [2, 2, 2, 2], num_classes)
 
 
 @model_registry
 def resnet34(num_classes):
+    """返回 ResNet-34 模型实例（BasicBlock，层配置 [3,4,6,3]）。"""
     return resnet(BasicBlock, [3, 4, 6, 3], num_classes)
 
 
 @model_registry
 def resnet50(num_classes):
+    """返回 ResNet-50 模型实例（Bottleneck，层配置 [3,4,6,3]）。"""
     return resnet(Bottleneck, [3, 4, 6, 3], num_classes)
 
 
 @model_registry
 def resnet101(num_classes):
+    """返回 ResNet-101 模型实例（Bottleneck，层配置 [3,4,23,3]）。"""
     return resnet(Bottleneck, [3, 4, 23, 3], num_classes)
 
 
 @model_registry
 def resnet152(num_classes):
+    """返回 ResNet-152 模型实例（Bottleneck，层配置 [3,8,36,3]）。"""
     return resnet(Bottleneck, [3, 8, 36, 3], num_classes)
 
 
 def test():
+    """简单测试函数：构建 resnet18 并以随机输入验证输出形状。"""
     net = resnet18()
     y = net(torch.randn(1, 3, 32, 32))
     print(y.size())
 
-# test()
+
+# __AI_ANNOTATION_SUMMARY__
+# 类 BasicBlock: ResNet 基础残差单元。
+# 方法 forward (BasicBlock/Bottleneck/resnet): 定义残差块与网络整体前向路径。
+# 函数 resnet18/resnet34/...: 返回指定深度的 ResNet 模型实例。

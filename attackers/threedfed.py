@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 # !! Ongoing work, not finished yet
 
@@ -5,6 +6,7 @@ import copy
 import logging
 import numpy as np
 import torch
+
 from .badnets import BadNets
 from attackers.pbases.mpbase import MPBase
 from global_utils import actor, setup_logger
@@ -18,7 +20,62 @@ from fl.client import Client
 @attacker_registry
 @actor('attacker', 'model_poisoning', 'omniscient')
 class ThreeDFed(MPBase, Client):
+    """3DFed 组合式攻击器（未完成的实验性实现）。
+
+    设计意图参考 3DFed（Decoupled, Debiased, and Decoy）混合攻击思路，
+    结合模型投毒与数据投毒，并通过指示器、噪声掩码与诱饵模型等机制对防御进行适配。
+    当前代码仍在开发阶段，逻辑尚未完备，文档仅用于帮助理解现有草稿。
+
+    属性:
+        indicators (dict): 存储轮次相关的指示器结果。
+        num_decoy (int): 诱饵模型数量。
+        alpha (List[float]): 攻击强度/噪声掩码系数候选列表（尚未赋值）。
+        weakDP (bool): 标记服务器是否启用弱差分隐私策略。
+        logger (logging.Logger): 攻击侧日志记录器。
+        synthesizer (Synthesizer): 来自 BadNets 的触发器合成器。
+        train_loader (DataLoader): 含投毒样本的训练数据加载器。
+        poison_start_epoch/poison_end_epoch (int 或 Tuple): 攻击启动与结束轮次（当前草稿仅赋值 0）。
+    """
+
     def __init__(self, args, worker_id, train_dataset, test_dataset):
+        """初始化 3DFed 攻击器，挂载日志、触发器与基础状态。
+
+        概述:
+            在保留 `Client` 基类初始化的基础上，创建日志记录器、触发器合成器与投毒数据加载器。
+            由于功能未完成，诸如 `alpha`、`poison_end_epoch` 等属性后续仍需补全。
+
+        参数:
+            args (argparse.Namespace): 全局配置对象，需包含数据集、模型、防御策略等字段。
+            worker_id (int): 攻击客户端编号。
+            train_dataset (Dataset): 本地训练数据集（用于投毒）。
+            test_dataset (Dataset): 本地测试数据集。
+
+        返回:
+            None。
+
+        异常:
+            AttributeError: 当 `args` 缺少日志路径相关字段时，`setup_logger` 可能抛出异常。
+
+        复杂度:
+            时间复杂度 O(1)，空间复杂度 O(1)。
+
+        费曼学习法:
+            (A) 该函数把 3DFed 攻击者需要的工具（日志、触发器、数据加载器）都准备好。
+            (B) 类比一次演出前，先搭好舞台、调好灯光、安排彩排队伍。
+            (C) 步骤拆解:
+                1. 调用 `Client.__init__`，确保通信与训练接口可用。
+                2. 初始化指标字典、诱饵模型数量等状态变量。
+                3. 构造日志文件路径，并使用 `setup_logger` 创建攻击日志记录器。
+                4. 实例化 BadNets 并复用其数据合成器。
+                5. 构建带投毒标记的训练数据加载器。
+                6. 初步设定攻击起止轮次（当前为占位值）。
+            (D) 示例:
+                >>> attacker = ThreeDFed(args, worker_id=0, train_dataset=train_ds, test_dataset=test_ds)
+                >>> attacker.logger
+                <Logger 3dfed (INFO)>
+            (E) 边界条件与测试建议: `BadNets(args)` 当前仅用于访问默认合成器；后续若补全需关注参数传递。
+            (F) 背景参考: 3DFed 原论文、BadNets 数据投毒实现。
+        """
         Client.__init__(self, args, worker_id, train_dataset, test_dataset)
         self.indicators = {}
         self.num_decoy: int = 0  # num of decoy models
@@ -39,7 +96,36 @@ class ThreeDFed(MPBase, Client):
         self.poison_start_epoch, self.poison_end_epoch = 0
 
     def omniscient(self, clients):
-        """After the local training, the attacker can perform the attack.
+        """全知场景下执行 3DFed 攻击主流程（草稿版）。
+
+        概述:
+            草稿遵循论文大纲：记录指示器、适配诱饵策略、执行本地训练与范数裁剪、设计噪声掩码等。
+            多个步骤仍未实现，当前流程仅保留框架与调用顺序。
+
+        参数:
+            clients (List[Client]): 当前轮次的客户端列表。
+
+        返回:
+            None（未来版本可能返回构造后的更新向量）。
+
+        异常:
+            AttributeError/TypeError: 由于实现未完成，某些属性或函数调用可能缺失。
+
+        复杂度:
+            时间复杂度取决于完成后的各子步骤，目前未定。
+
+        费曼学习法:
+            (A) 函数描绘了 3DFed 攻击的整体操作顺序。
+            (B) 类比一场未排练完的戏剧：导演先按场景写好流程，但演员台词尚未补齐。
+            (C) 步骤拆解（基于草稿）:
+                1. 根据轮次判断是否需要生成指示器或调优策略。
+                2. 在攻击起始轮次记录指示器，后续读取反馈并自适应调整诱饵与参数。
+                3. 备份当前更新，执行本地训练与范数裁剪。
+                4. 再次设计指示器、优化噪声掩码与诱饵模型（均待实现）。
+            (D) 示例:
+                >>> attacker.omniscient(clients)  # 当前仍为草稿流程
+            (E) 边界条件与测试建议: 由于函数未完成，建议先不要纳入主流程；可在补齐实现前加上防护逻辑。
+            (F) 背景参考: 3DFed 攻击论文、指示器反馈与诱饵模型策略。
         """
         epoch = self.global_epoch
         if epoch == self.poison_start_epoch:
@@ -68,6 +154,36 @@ class ThreeDFed(MPBase, Client):
         pass
 
     def norm_clip(self, backdoor_update, benign_update):
+        """对后门更新进行范数裁剪，使其接近良性更新尺度。
+
+        概述:
+            计算良性与后门更新的 L2 范数，将后门更新缩放至不超过良性范数，并返回适当放大的结果。
+
+        参数:
+            backdoor_update (Tensor): 后门更新向量。
+            benign_update (Tensor): 参考的良性更新向量。
+
+        返回:
+            Tensor: 裁剪后的后门更新。
+
+        异常:
+            ZeroDivisionError: 当后门更新范数为 0 时若未做防护（当前草稿未处理）。
+
+        复杂度:
+            时间复杂度 O(d)，d 为向量维度；空间复杂度 O(1)。
+
+        费曼学习法:
+            (A) 函数让后门更新的“力度”不要超过良性更新的“力量”。
+            (B) 类比把一杯味道过重的饮料兑水，让它尝起来与普通饮料相近。
+            (C) 步骤拆解:
+                1. 计算良性与后门更新的范数。
+                2. 若后门范数过大则缩放至不超过良性范数。
+                3. 取良性与后门范数比值，结合缩放因子返回裁剪后的更新。
+            (D) 示例:
+                >>> clipped = attacker.norm_clip(backdoor_update, benign_update)
+            (E) 边界条件与测试建议: 需考虑 backdoor_norm 为 0 的情况；建议添加数值稳定处理。
+            (F) 背景参考: 范数裁剪、模型替换攻击中的尺度控制。
+        """
         # 1. Get the norm of the benign update and backdoor update
         benign_norm, backdoor_norm = torch.norm(
             benign_update), torch.norm(backdoor_update)
@@ -81,6 +197,7 @@ class ThreeDFed(MPBase, Client):
         return max(scale_factor, 1)*backdoor_update
 
     def design_indicator(self):
+        """计算指示器（indicator）以评估模型更新（未完成）。"""
         total_devices = self.args.num_adv + self.num_decoy
         no_layer = 0
         # 1. Find indicators
@@ -114,8 +231,7 @@ class ThreeDFed(MPBase, Client):
         # TODO:
 
     def read_indicator(self, clients, indicator_indices):
-        """get feedback which is the quotient of last global updates and current local updates on the same indicator indices, and mark accept, clipped, rejected for each client
-        """
+        """读取指示器反馈并判定接受/裁剪/拒绝状态（草稿）。"""
         accept, feedbacks = [], []
 
         # if previous epoch have already detect that the server is applying weakDP, then the attacker will use the weakDP strategy directly by discarding the indicator feedback function
@@ -143,6 +259,7 @@ class ThreeDFed(MPBase, Client):
         return accept
 
     def adaptive_tuning(self, accept):
+        """根据指示器反馈自适应调整诱饵数量与噪声掩码系数（草稿）。"""
         # if the server has already been detected applying weakDP, the attacker will use the weakDP strategy in the following epochs
         if self.weakDP:
             self.logger.warning("3DFed: disable adaptive tuning")
@@ -202,7 +319,21 @@ class ThreeDFed(MPBase, Client):
                 self.alpha[i] = 0.01
 
     def optimize_noise_masks(self):
+        """优化噪声掩码（尚未实现）。"""
         pass
 
     def decoy_model_design(self):
+        """设计诱饵模型（尚未实现）。"""
         pass
+
+
+# __AI_ANNOTATION_SUMMARY__
+# 类 ThreeDFed: 3DFed 混合攻击草稿，整合指示器、诱饵与噪声掩码思路。
+# 方法 __init__: 初始化日志、触发器与投毒训练管线，标记弱差分隐私状态。
+# 方法 omniscient: 按 3DFed 流程骨架执行指示器与范数裁剪（未完成）。
+# 方法 norm_clip: 将后门更新范数裁剪至接近良性更新。
+# 方法 design_indicator: 计算指示器与曲率并选取关键坐标（未完成）。
+# 方法 read_indicator: 根据指示器反馈判定客户端状态，检测弱 DP。
+# 方法 adaptive_tuning: 依据反馈调整诱饵数量与噪声掩码系数（草稿）。
+# 方法 optimize_noise_masks: 预留噪声掩码优化逻辑。
+# 方法 decoy_model_design: 预留诱饵模型构造逻辑。
