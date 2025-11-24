@@ -217,3 +217,4 @@ defenses:
     - defense: FLAME
       defense_params:
           gamma: 1.2e-5
+    - defense: MeanNorm
