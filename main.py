@@ -50,7 +50,8 @@ def fl_run(args):
             - 概念: 联邦学习训练管线。
             - 参考书籍: 《Federated Learning》实验框架章节。
     """
-    # setup logger
+    # Step 0: prepare logging and randomness so that the entire FL run is reproducible.
+    # 步骤0：初始化日志与随机种子，保证实验过程、输出与随机性完全可追踪。
     args.logger = setup_logger(
         __name__, f'{args.output}', level=logging.INFO)
     print_filtered_args(args, args.logger)
@@ -58,20 +59,24 @@ def fl_run(args):
     args.logger.info(
         f"Started on {time.asctime(time.localtime(start_time))}")
     # fix randomness
+    # 设置统一随机种子；涉及 Torch/Numpy/随机扰动的步骤都会因此复现。
     setup_seed(args.seed)
 
-    # 1. load dataset and split dataset indices for clients with i.i.d or non-i.i.d
+    # 1. Load the raw dataset and partition it according to the specified heterogeneity pattern.
+    # 第1步：加载原始数据集，并根据 iid / non-iid / pat 等分布策略切分给各客户端。
     train_dataset, test_dataset = load_data(args)
     client_indices, test_dataset = split_dataset(
         args, train_dataset, test_dataset)
     args.logger.info("Data partitioned")
 
-    # 2. initialize clients and server with seperate training data indices
+    # 2. Instantiate every client/server with its own data slice so local training is independent.
+    # 第2步：创建客户端与服务器对象，并为每个客户端绑定其专属的数据索引，实现本地独立训练。
     clients = coordinator.init_clients(
         args, client_indices, train_dataset, test_dataset)
     the_server = Server(args, clients, test_dataset, train_dataset)
 
-    # 3. initialize the federated learning algorithm for clients and server
+    # 3. Configure the FL optimizer/aggregator so both sides know how to update weights.
+    # 第3步：根据配置设定联邦优化/聚合算法，确保客户端与服务器使用同一套更新逻辑（如 FedAvg、Median 等）。
     coordinator.set_fl_algorithm(args, the_server, clients)
     args.logger.info("Clients and server are initialized")
     args.logger.info("Starting Training...")
@@ -81,11 +86,16 @@ def fl_run(args):
         # server dispatches numpy version global weights 1d vector to clients
         global_weights_vec = the_server.global_weights_vec
 
-        # clients' local training
+        # clients' local training: broadcast, fit locally, store statistics for logging.
+        # 客户端本地训练：先拉取新模型，再独立迭代若干 local epochs，并记录训练指标以便聚合与日志输出。
         avg_train_acc, avg_train_loss = [], []
         for client in clients:
+            # pull the latest global model before each local update
+            # 拉取最新全局模型，确保所有客户端从同一权重出发。
             client.load_global_model(global_weights_vec)
             train_acc, train_loss = client.local_training()
+            # serialize updates (weights / gradients) so the server can aggregate them later
+            # 序列化本地更新（权重向量/梯度），待会传回服务器参与聚合。
             client.fetch_updates()
             avg_train_acc.append(train_acc)
             avg_train_loss.append(train_loss)
@@ -99,24 +109,31 @@ def fl_run(args):
 
         # server collects weights from clients
         the_server.collect_updates(global_epoch)
-        the_server.aggregation()
-        the_server.update_global()
+        the_server.aggregation()  # run the configured robust mean/aggregator
+        # 服务器端执行指定聚合规则（如 FedAvg、Robust Aggregator）来融合更新。
+        the_server.update_global()  # push the aggregated model back to the global buffer
+        # 将聚合完成的全局模型写回缓冲区，供下一轮广播。
 
         # evalute the attack success rate (ASR) when a backdoor attack is launched
+        # 若存在后门攻击，此处额外统计 ASR/主任务准确率等指标，用于衡量防御效果。
         test_stats = coordinator.evaluate(
             the_server, test_dataset, args, global_epoch)
 
         # print the training and testing results of the current global_epoch
+        # 输出当前全局轮的训练/测试统计信息，便于追踪收敛与攻击成效。
         epoch_msg += "\t".join(
             [f"{key}: {value:.4f}" for key, value in test_stats.items()])
         args.logger.info(epoch_msg)
-        # clear memory
+        # clear memory to reduce GPU/CPU pressure in long experiments
+        # 清理 Python/GPU 缓存，避免长时间实验导致显存/内存膨胀。
         gc.collect()
 
     if args.record_time:
+        # 可选：记录每个客户端与服务器端在通信/训练阶段的耗时，便于性能评估。
         report_time(clients, the_server)
 
-    plot_accuracy(args.output)
+    plot_accuracy(args.output)  # generate and save accuracy/ASR curves for later inspection
+    # 绘制准确率/攻击成功率随全局轮数的曲线并保存，方便后续分析。
 
     end_time = time.time()
     time_difference = end_time - start_time
@@ -159,7 +176,7 @@ def report_time(clients, the_server):
 
 def omniscient_attack(clients):
     """
-    触发全知攻击，协调恶意客户端根据全球信息篡改更新向量。
+    触发全知攻击，协调恶意客户端根据global信息篡改更新向量。
 
     参数:
         clients (List[Client]): 所有客户端对象，攻击者需实现 `omniscient` 方法。

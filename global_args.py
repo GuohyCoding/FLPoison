@@ -56,6 +56,7 @@ def read_args():
     """
     parser = argparse.ArgumentParser(
         description="Poisoning attacks and defenses in Federated Learning")
+    
     parser.add_argument('-config', '--config', type=str,
                         required=True, help='Path to the YAML configuration file')
     # command line arguments if provided
@@ -91,6 +92,7 @@ def read_args():
     # attacks and defenses settings
     all_attacks = ['NoAttack'] + \
         model_poisoning_attacks + data_poisoning_attacks
+    
     parser.add_argument('-att', '--attack',
                         choices=all_attacks, help="Attacks options")
     parser.add_argument('-attack_start_epoch', '--attack_start_epoch',
@@ -159,7 +161,7 @@ def read_yaml(filename):
             - 参考书籍: 《Python YAML Cookbook》。
     """
     # read configurations from yaml file to args dict object
-    with open(filename.strip(), 'r') as file:
+    with open(filename.strip(), 'r', encoding='utf-8') as file:
         args_dict = yaml.load(file, Loader=yaml.FullLoader)
     args = SimpleNamespace(**args_dict)
     return args
@@ -307,12 +309,13 @@ def single_preprocess(args):
             - 参考书籍: 《Federated Learning》实验实践章节。
     """
     # load dataset configurations, also include learning rate and epochs
-    with open("./configs/dataset_config.yaml", 'r') as file:
+    with open("./configs/dataset_config.yaml", 'r', encoding='utf-8') as file:
         dataset_config = yaml.load(file, Loader=yaml.FullLoader)
     for key, value in dataset_config[args.dataset].items():
         if key in ['mean', 'std']:
             # mean/std 在 YAML 中以字符串存储，这里解析成数值列表/元组
-            value = eval(value)
+            value = eval(value)  # eval() 会把传入的字符串当作一段 Python 表达式来执行，并返回结果
+        # 把每个配置条目动态挂到 args 上，后续训练流程可以通过 args.mean、args.image_size 等属性读取
         setattr(args, key, value)
 
     # preprocess the arguments

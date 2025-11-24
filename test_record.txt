@@ -1,0 +1,4 @@
+# 测试
+python main.py --config configs/FedSGD_MNIST_config.yaml --attack PoisonedFL --num_adv 0.2 --defense Krum --algorithm FedSGD --dataset MNIST --model lenet --epochs 5
+
+# python main.py --config configs/FedSGD_MNIST_config.yaml --attack PoisonedFL --num_adv 200 --defense Median --algorithm FedAvg --dataset MNIST --model simplecnn --epochs 2000 --local_epochs 1

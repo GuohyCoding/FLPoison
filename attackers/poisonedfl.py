@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
-import math
+
+import numpy as np
 import torch
+
 from attackers import attacker_registry
 from attackers.pbases.mpbase import MPBase
 from fl.client import Client
@@ -8,194 +10,141 @@ from global_utils import actor
 
 
 @attacker_registry
-@actor("attacker", "model_poisoning", "non_omniscient")
+@actor('attacker', 'model_poisoning', 'omniscient')
 class PoisonedFL(MPBase, Client):
     """
-    固定方向 + 动态缩放的模型投毒攻击（忠实还原 PoisonedFL/byzantine.py 流程，改用 PyTorch）。
-
-    - 延续原流程：保留 fixed_rand 维度分支、k_95/k_99 阈值、历史梯度 history、last_grad、init_model、
-      last_50_model、sf 动态缩放、deviation 计算等步骤。
-    - 非全知：只用本地信息，但内部状态（history 等）按原逻辑维护，方便后续多客户端扩展。
+    PyTorch reimplementation of the PoisonedFL attack.
+    The attacker aligns a scaled fixed random direction with the residual
+    global update while adaptively shrinking the scaling factor every 50 rounds
+    when the aggregated direction drifts away from the fixed sign pattern.
     """
 
     def __init__(self, args, worker_id, train_dataset, test_dataset):
         Client.__init__(self, args, worker_id, train_dataset, test_dataset)
-
-        self.default_attack_params = {
-            # 原实现中外部传入，保持可配置；默认值与 MXNet 版一致
-            "scaling_factor": 100000.0,
-        }
+        # 沿用 MXNet 参考实现的默认放大系数，方便与原结果对齐；脚本参数可覆盖以做消融。
+        self.default_attack_params = {"scaling_factor": 8.0}  # scaling_factor设为8防止溢出
         self.update_and_set_attr()
 
-        # 持久状态，按原始实现命名
+        self.current_scaling_factor = float(self.scaling_factor)
+        # 固定随机方向（±1），只在首次调用时生成，保持攻击方向全程一致以稳定扰动。
         self.fixed_rand = None
-        self.history = None
-        self.last_grad = None
-        self.init_model = None
-        # 模型快照队列，用于“距离上一轮或 50 轮前”的对比
-        self._model_queue = []
+        # 记录初始/上一轮/最近 50 轮的全局模型向量，用于计算残差与漂移对齐度。
+        self.init_model_vec = None
+        self.prev_global_vec = None
+        self.last_50_global_vec = None
+        # 缓存上一轮的（潜在）恶意梯度，缺失时回退为良性更新，避免无历史信息时的震荡。
+        self.last_grad_vec = None
 
-    # --------- 工具函数（向量化辅助） ---------
-    @staticmethod
-    def _flatten_params(params):
-        return torch.cat([p.view(-1) for p in params])
+    def omniscient(self, clients):
+        attackers = [
+            client for client in clients
+            if client.category == "attacker"
+        ]
+        if not attackers:
+            return None
 
-    @staticmethod
-    def _unflatten_like(vec, like_params):
-        # 将一维向量按照 like_params 的形状拆回（此处用于求形状，不回写模型）
-        outputs = []
-        offset = 0
-        for p in like_params:
-            num = p.numel()
-            outputs.append(vec[offset:offset + num].view_as(p))
-            offset += num
-        return outputs
+        # 当前废播的全局模型向量，作为本轮计算 residual/漂移的基准。
+        current_global_vec = torch.from_numpy(
+            np.asarray(self.global_weights_vec, dtype=np.float32)
+        ).flatten()
 
-    def _num_attackers(self):
-        # 与原实现类似：num_adv 若为比例则换算成整数
-        adv = getattr(self.args, "num_adv", 1)
-        if isinstance(adv, float) and adv < 1:
-            adv = max(1, int(math.ceil(adv * self.args.num_clients)))
-        return int(adv) if adv else 1
-
-    # --------- 逻辑函数：与 PoisonedFL/byzantine.py 对应 ---------
-    @staticmethod
-    def _compute_lambda(all_updates, model_re, n_attackers):
-        distances = []
-        n_benign, d = all_updates.shape
-        for update in all_updates:
-            distance = (all_updates - update).norm(dim=1)
-            distances.append(distance)
-        distances = torch.stack(distances)
-        distances = torch.sort(distances, dim=1).values
-        scores = distances[:, : n_benign - 1 - n_attackers].sum(dim=1)
-        min_score = scores.min()
-        term_1 = min_score / ((n_benign - n_attackers - 1) * math.sqrt(d))
-        max_wre_dist = ((all_updates - model_re).norm(dim=1)).max() / math.sqrt(d)
-        return term_1 + max_wre_dist
-
-    @staticmethod
-    def _score(gradient, v, nbyz):
-        num_neighbours = v.shape[0] - 2 - nbyz
-        sorted_distance = torch.square(v - gradient).sum(dim=1).sort().values
-        return sorted_distance[1 : 1 + num_neighbours].sum().item()
-
-    def _poisonedfl(self, v, net, lr, nfake, history, fixed_rand, init_model, last_50_model, last_grad, e, scaling_factor=100000.0):
-        # 1) k_95/k_99 动态计算（二项分布均值±Zσ近似），避免模型尺寸变动时抛异常
-        n_dims = fixed_rand.numel()
-        mu = 0.5 * n_dims
-        sigma = math.sqrt(n_dims * 0.5 * 0.5)
-        k_95 = int(round(mu + 1.645 * sigma))
-        k_99 = int(round(mu + 2.326 * sigma))
-
-        sf = scaling_factor
-
-        # 2) 需历史信息才执行
-        if isinstance(history, torch.Tensor):
-            # 当前模型参数扁平化
-            current_model_list = [p.detach().clone() for p in net.parameters()]
-            current_model = self._flatten_params(current_model_list).view(-1, 1)
-            last50_flat = self._flatten_params(last_50_model).view(-1, 1)
-
-            history_norm = history.norm()
-            last_grad_norm = last_grad.norm()
-            # scale: || history - last_grad * (||history|| / ||last_grad||) ||
-            scale = torch.norm(
-                history - last_grad.unsqueeze(-1) * history_norm / (last_grad_norm + 1e-9),
-                dim=1,
-            )
-            deviation = scale * fixed_rand / (scale.norm() + 1e-9)
-
-            if e % 50 == 0:
-                total_update = current_model - last50_flat
-                total_update = torch.where(total_update == 0, current_model, total_update)
-                current_sign = torch.sign(total_update)
-                aligned_dim_cnt = (current_sign == fixed_rand.view(-1, 1)).sum()
-                if aligned_dim_cnt < k_99 and scaling_factor * 0.7 >= 0.5:
-                    sf = scaling_factor * 0.7
-                else:
-                    sf = scaling_factor
-                lamda_succ = sf * history_norm
-            else:
-                sf = scaling_factor
-                lamda_succ = sf * history_norm
-
-            mal_update = lamda_succ * deviation  # shape: (dim,)
-
-            for i in range(nfake):
-                v[i] = mal_update  # 保持形状 (dim,)
-
-        return v, sf
-
-    @staticmethod
-    def _random_attack(v, scaling_factor=100000.0):
-        for i in range(v.shape[0]):
-            v[i] = scaling_factor * torch.randn_like(v[0])
-        return v, scaling_factor
-
-    def _init_attack(self, v, net, nfake, init_model, scaling_factor=100000.0):
-        current_model_list = [p.detach().clone() for p in net.parameters()]
-        current_model = self._flatten_params(current_model_list).view(-1, 1)
-        init_model_flat = self._flatten_params(init_model).view(-1, 1)
-        direction = init_model_flat - current_model
-        for i in range(nfake):
-            v[i] = scaling_factor * direction.squeeze()
-        return v, scaling_factor
-
-    # --------- 攻击入口 ---------
-    def non_omniscient(self) -> torch.Tensor:
-        """
-        入口：复现原 PoisonedFL 的 poisonedfl 分支（固定 random vector + 历史缩放）。
-        """
-        # self.update 可能是 torch.Tensor，也可能是 numpy.ndarray；统一转 torch.Tensor，并放到模型所在设备
-        try:
-            model_device = next(self.model.parameters()).device
-        except StopIteration:
-            model_device = torch.device("cpu")
-        benign_update = torch.as_tensor(self.update, device=model_device).flatten()
-        device = benign_update.device
-
-        # 初始化状态
+        # 首次进入时初始化固定方向与基准快照。
         if self.fixed_rand is None:
-            fr = torch.sign(torch.randn_like(benign_update))
-            fr[fr == 0] = 1.0
-            self.fixed_rand = fr.to(device)
-        if self.init_model is None:
-            self.init_model = [p.detach().clone() for p in self.model.parameters()]
-        if not self._model_queue:
-            self._model_queue.append([p.detach().clone() for p in self.model.parameters()])
-        if self.history is None:
-            # history 期望形状与 deviation 计算一致，转成 (dim,1)
-            self.history = benign_update.view(-1, 1)
-        if self.last_grad is None:
-            self.last_grad = benign_update.clone()
+            # 与 MXNet 版本一致：随机符号向量，sign 保证只有 ±1。
+            self.fixed_rand = torch.sign(torch.randn_like(current_global_vec))
+            # 极小概率出现 0，用 where 转成 以保持符号稳定。
+            zero_mask = self.fixed_rand == 0
+            if torch.any(zero_mask):
+                self.fixed_rand = torch.where(
+                    zero_mask, torch.ones_like(self.fixed_rand), self.fixed_rand
+                )
+            self.init_model_vec = current_global_vec.clone()
+            self.last_50_global_vec = current_global_vec.clone()
 
-        nfake = self._num_attackers()
-        v = benign_update.new_zeros((nfake, benign_update.numel()))
+            # XXX
+            print("fixed_rand", self.fixed_rand)
+            print("fixed_rand.shape[0]", self.fixed_rand.shape[0])
 
-        v_out, sf = self._poisonedfl(
-            v,
-            self.model,
-            getattr(self.args, "learning_rate", None) or self.optimizer.param_groups[0]["lr"],
-            nfake,
-            self.history,
-            self.fixed_rand,
-            self.init_model,
-            self._model_queue[0],
-            self.last_grad,
-            self.global_epoch,
-            self.scaling_factor,
+        # history 为连续两轮全局模型的差值，等价于 MXNet 里的 current_model - last_model。
+        history_vec = None
+        if self.prev_global_vec is not None:
+            history_vec = (current_global_vec - self.prev_global_vec).unsqueeze(1)
+
+        # XXX：测试
+        # print("prev_global_vec: ", self.prev_global_vec)
+        # print("history_vec: ", history_vec)
+
+        # 无论返回与否，都先更新 prev_global，保证下一轮有参照。
+        self.prev_global_vec = current_global_vec.clone()
+
+        # 缺少历史或上一轮恶意梯度时，先返回良性更新以维持数值稳定。
+        if history_vec is None or self.last_grad_vec is None:
+            benign_updates = np.stack(
+                [np.array(client.update, copy=True) for client in attackers], axis=0
+            ).astype(np.float32)
+            self.last_grad_vec = torch.from_numpy(
+                np.mean(benign_updates, axis=0)
+            ).float()
+            # 同步 50 轮快照，确保自适应缩放基于统一的全局节奏。
+            if self.global_epoch % 50 == 0:
+                self.last_50_global_vec = current_global_vec.clone()
+            return benign_updates
+
+        k_95, k_99 = self._get_thresholds(self.fixed_rand.numel())
+        sf = float(self.current_scaling_factor)
+        eps = 1e-9
+
+        history_norm = torch.norm(history_vec)
+        last_grad_norm = torch.norm(self.last_grad_vec)
+
+        # 去掉上一轮梯度方向后得到残差，再按固定符号重新对齐，这对应文里的 fixed direction 投影。
+        residual = history_vec.squeeze(1) - self.last_grad_vec * (
+            history_norm / (last_grad_norm + eps)
         )
+        scale = torch.norm(residual.unsqueeze(1), dim=1)
+        deviation = scale * self.fixed_rand / (torch.norm(scale) + eps)
+        # XXX：测试
+        # print("deviation: ", deviation)
 
-        # 仅返回当前客户端的投毒更新（对其他攻击者可复用 v_out 中的副本）
-        poisoned_vec = v_out[0].view_as(benign_update)
+        current_epoch = int(self.global_epoch)
+        if current_epoch % 50 == 0:
+            # 每 50 轮检查一次固定方向的对齐度，偏移过大则指数衰减 scaling_factor，防止梯度漂移。
+            total_update = current_global_vec - self.last_50_global_vec
+            replaced = torch.where(total_update == 0, current_global_vec, total_update)
+            current_sign = torch.sign(replaced)
+            aligned_dim_cnt = int((current_sign == self.fixed_rand).sum().item())
+            if aligned_dim_cnt < k_99 and sf * 0.7 >= 0.5:
+                sf = sf * 0.7
+            lamda_succ = sf * history_norm
+        else:
+            lamda_succ = sf * history_norm
 
-        # 更新内部状态以便下一轮
-        self.last_grad = benign_update.detach()
-        self.history = poisoned_vec.detach().view(-1, 1)
-        # 更新模型快照队列，保留最近 50 轮前的快照位置
-        self._model_queue.append([p.detach().clone() for p in self.model.parameters()])
-        if len(self._model_queue) > 50:
-            self._model_queue.pop(0)
+        # 按固定方向生成恶意更新，并复制到所有攻击者，复用了良性 update 的形状以兼容聚合。
+        mal_update = lamda_succ * deviation
+        mal_update_np = mal_update.detach().cpu().numpy().astype(np.float32)
+        malicious_updates = np.tile(mal_update_np, (len(attackers), 1))
 
-        return poisoned_vec
+        # 持久化状态，下一轮继续基于同一方向与缩放系数迭代。
+        self.current_scaling_factor = sf
+        self.last_grad_vec = torch.from_numpy(malicious_updates[0]).float()
+        if current_epoch % 50 == 0:
+            self.last_50_global_vec = current_global_vec.clone()
+
+        # XXX：测试
+        # print("malicious_updates: ", malicious_updates)
+        return malicious_updates
+
+    @staticmethod
+    def _get_thresholds(dim):
+        thresholds = {
+            1204682: (603244, 603618),
+            139960: (70288, 70415),
+            717924: (359659, 359948),
+            145212: (72919, 73049),
+            61706: (31057, 31142),  # lenet MNIST 固定方向维度
+        }
+        if dim not in thresholds:
+            raise NotImplementedError(
+                f"Unsupported fixed_rand dimension {dim} for PoisonedFL thresholds."
+            )
+        return thresholds[dim]

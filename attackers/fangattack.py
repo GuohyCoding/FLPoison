@@ -149,6 +149,9 @@ class FangAttack(MPBase, Client):
         # 让其余攻击者提交相同向量作为支持者，确保 Krum 更倾向于选择恶意方向。
         for i in range(1, self.args.num_adv):
             attacker_updates[i] = attacker_updates[0]
+
+        # XXX：测试
+        # print("malicious_updates: ", attacker_updates)
         return attacker_updates
 
     def sample_vectors(self, epsilon, w0_prime, num_byzantine):

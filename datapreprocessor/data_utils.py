@@ -172,13 +172,21 @@ def get_transform(args):
         (E) 边界条件与测试建议: 需确保 `args` 包含所需属性；测试不同组合是否抛出异常或返回预期变换。
         (F) 背景参考: 计算机视觉中常见的数据增强策略、模型输入尺寸要求。
     """
-    if args.dataset in ["MNIST", "FashionMNIST", "EMNIST", "FEMNIST"] and args.model in ['lenet', "lr"]:
-        # resize MNIST to 32x32 for LeNet5
-        train_tran = transforms.Compose(
-            [transforms.Resize((32, 32)), transforms.ToTensor(), transforms.Normalize(args.mean, args.std)])
-        test_trans = train_tran
-        # define the image dimensions for self.args, so that others can use it, such as DeepSight, lr model
-        args.num_dims = 32
+    if args.dataset in ["MNIST", "FashionMNIST", "EMNIST", "FEMNIST"]:
+        if args.model in ['lenet', "lr"]:
+            # resize MNIST to 32x32 for LeNet5
+            train_tran = transforms.Compose(
+                [transforms.Resize((32, 32)), transforms.ToTensor(), transforms.Normalize(args.mean, args.std)])
+            test_trans = train_tran
+            args.num_dims = 32
+        elif args.model == "simplecnn":
+            # simplecnn 默认按照原始 28x28 灰度输入
+            train_tran = transforms.Compose(
+                [transforms.ToTensor(), transforms.Normalize(args.mean, args.std)])
+            test_trans = train_tran
+            args.num_dims = 28
+        else:
+            raise ValueError("Dataset-model combination not implemented yet")
     elif args.dataset in ["CINIC10"]:
         train_tran = transforms.Compose(
             [transforms.ToTensor(), transforms.Normalize(mean=args.mean, std=args.std)])
