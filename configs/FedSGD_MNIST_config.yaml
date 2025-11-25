@@ -1,14 +1,14 @@
 # This file serves as the configurations for the benchmarking experiments, including the basic configuration and the parameters for all attacks and defenses that are going to be tested. You can copy this file and modify it to run your own single attack and defense experiments.
-seed: 4 # seed for reproducibility
+seed: 42 # seed for reproducibility
 # basic configuration
-epochs: 300 # global epochs
+epochs: 1000 # global epochs
 algorithm: FedSGD # algorithm, FedSGD, FedAvg, FedOpt
 optimizer: SGD # optimizer for training
 momentum: 0.9
 weight_decay: 5.0e-4
 # lr_scheduler: MultiStepLR # learning rate scheduler
 # milestones: [0.6, 0.8] # milestones for learning rate scheduler
-num_clients: 1000 # number of participating clients
+num_clients: 1200 # number of participating clients
 batch_size: 32 # batch_size
 learning_rate: 0.01 # clients' local learning rate
 model: lenet # model architecture
@@ -23,7 +23,7 @@ num_workers: 0  # 指定数据加载时使用的子进程数量
 record_time: False
 
 # general attack settings
-num_adv: 0.2 # the proportion (float < 1) or number (int>1) of adversaries
+num_adv: 240 # the proportion (float < 1) or number (int>1) of adversaries
 
 attack: NoAttack
 defense: Mean
@@ -34,6 +34,9 @@ defense: Mean
 
 attacks:
     - attack: NoAttack
+    - attack: PoisonedFL
+      attack_params:
+          scaling_factor: 8.0
     - attack: IPM
       attack_params: # Parameters for attacks
           scaling_factor: 0.5 # 0.5, 100
@@ -131,9 +134,6 @@ attacks:
           malicous_epochs: 1
           source_label: 3
           target_label: 7
-    - attack: PoisonedFL
-      attack_params:
-          scaling_factor: 8.0
 
 defenses:
     - defense: Mean
