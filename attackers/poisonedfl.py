@@ -22,7 +22,7 @@ class PoisonedFL(MPBase, Client):
     def __init__(self, args, worker_id, train_dataset, test_dataset):
         Client.__init__(self, args, worker_id, train_dataset, test_dataset)
         # 沿用 MXNet 参考实现的默认放大系数，方便与原结果对齐；脚本参数可覆盖以做消融。
-        self.default_attack_params = {"scaling_factor": 8.0}  # scaling_factor设为8防止溢出
+        self.default_attack_params = {"scaling_factor": 10000.0}  # scaling_factor设为8防止溢出
         self.update_and_set_attr()
 
         self.current_scaling_factor = float(self.scaling_factor)
@@ -130,8 +130,23 @@ class PoisonedFL(MPBase, Client):
         if current_epoch % 50 == 0:
             self.last_50_global_vec = current_global_vec.clone()
 
-        # XXX：测试
+        # XXX：测试，恶意更新和良性更新对比
         # print("malicious_updates: ", malicious_updates)
+        if current_epoch % 50 == 0:
+            benign_clients = [c for c in clients if c.category != "attacker"]
+            benign_updates = np.stack([np.array(c.update, copy=True) for c in benign_clients], axis=0)
+            benign_norm = np.linalg.norm(benign_updates.mean(axis=0))
+            cos = torch.nn.functional.cosine_similarity(
+                mal_update.flatten(), history_vec.flatten(), dim=0
+            ).item()
+            print(
+                f"[PoisonedFL debug] epoch={current_epoch}, sf={sf:.2e}, "
+                f"hist_norm={history_norm.item():.2e}, mal_norm={torch.norm(mal_update).item():.2e}, "
+                f"ratio_mal_hist={torch.norm(mal_update).item()/history_norm.item():.2e}, "
+                f"ratio_mal_benign={torch.norm(mal_update).item()/(benign_norm+1e-9):.2e}, "
+                f"cos_mal_hist={cos:.3f}"
+            )
+
         return malicious_updates
 
     @staticmethod

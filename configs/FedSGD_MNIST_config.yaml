@@ -133,7 +133,7 @@ attacks:
           target_label: 7
     - attack: PoisonedFL
       attack_params:
-          scaling_factor: 8.0
+          scaling_factor: 10000.0
 
 defenses:
     - defense: Mean
