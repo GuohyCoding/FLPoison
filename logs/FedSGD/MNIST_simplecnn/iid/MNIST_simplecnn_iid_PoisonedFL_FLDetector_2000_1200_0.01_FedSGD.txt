@@ -1,0 +1,80 @@
+seed: 42, epochs: 2000, algorithm: FedSGD, optimizer: SGD, momentum: 0.9, weight_decay: 0.0005, num_clients: 1200, batch_size: 32, learning_rate: 0.01, model: simplecnn, dataset: MNIST, distribution: iid, im_iid_gamma: 0.01, tail_cls_from: 4, dirichlet_alpha: 0.5, cache_partition: False, gpu_idx: [1], num_workers: 0, record_time: False, num_adv: 240, attack: PoisonedFL, defense: FLDetector, attack_params: {'scaling_factor': 8.0}, defense_params: None, benchmark: False, num_training_sample: 60000, num_channels: 1, num_classes: 10, mean: (0.1307,), std: (0.3081,), device: cuda:1, output: ./logs/FedSGD/MNIST_simplecnn/iid/MNIST_simplecnn_iid_PoisonedFL_FLDetector_2000_1200_0.01_FedSGD.txt
+
+Started on Tue Nov 25 13:58:47 2025
+Generating new indices
+Doing iid partition
+iid partition finished
+Data partitioned
+Clients and server are initialized
+Starting Training...
+Epoch 0  		Train Acc: 0.0967	Train loss: 0.0727	Test Acc: 0.0948	Test loss: 0.0727
+Epoch 1  		Train Acc: 0.0988	Train loss: 0.1315	Test Acc: 0.0958	Test loss: 0.0726
+Epoch 2  		Train Acc: 0.0977	Train loss: 0.0724	Test Acc: 0.0962	Test loss: 0.0724
+Epoch 3  		Train Acc: 0.0989	Train loss: 0.1310	Test Acc: 0.0965	Test loss: 0.0722
+Epoch 4  		Train Acc: 0.1004	Train loss: 0.0720	Test Acc: 0.0972	Test loss: 0.0720
+Epoch 5  		Train Acc: 0.0982	Train loss: 0.1303	Test Acc: 0.1043	Test loss: 0.0717
+Epoch 6  		Train Acc: 0.1091	Train loss: 0.0715	Test Acc: 0.1136	Test loss: 0.0715
+Epoch 7  		Train Acc: 0.1183	Train loss: 0.1294	Test Acc: 0.1619	Test loss: 0.0710
+Epoch 8  		Train Acc: 0.1642	Train loss: 0.0709	Test Acc: 0.1492	Test loss: 0.0711
+Epoch 9  		Train Acc: 0.1556	Train loss: 0.1286	Test Acc: 0.1941	Test loss: 0.0705
+Epoch 10 		Train Acc: 0.1997	Train loss: 0.0704	Test Acc: 0.1126	Test loss: 0.0710
+Epoch 11 		Train Acc: 0.1185	Train loss: 0.1284	Test Acc: 0.1199	Test loss: 0.0701
+Epoch 12 		Train Acc: 0.1214	Train loss: 0.0700	Test Acc: 0.1024	Test loss: 0.0720
+Epoch 13 		Train Acc: 0.1029	Train loss: 0.1304	Test Acc: 0.1252	Test loss: 0.0744
+Epoch 14 		Train Acc: 0.1203	Train loss: 0.0745	Test Acc: 0.0775	Test loss: 0.1387
+Epoch 15 		Train Acc: 0.0822	Train loss: 0.2498	Test Acc: 0.1048	Test loss: 0.7104
+Epoch 16 		Train Acc: 0.1060	Train loss: 0.6998	Test Acc: 0.1203	Test loss: 14.0977
+Epoch 17 		Train Acc: 0.1226	Train loss: 25.3540	Test Acc: 0.1965	Test loss: 68.7785
+Epoch 18 		Train Acc: 0.1932	Train loss: 68.2589	Test Acc: 0.1339	Test loss: 2287.8806
+Epoch 19 		Train Acc: 0.1321	Train loss: 4165.1864	Test Acc: 0.1020	Test loss: 659.9801
+Epoch 20 		Train Acc: 0.1033	Train loss: 671.5751	Test Acc: 0.1940	Test loss: 400682.3521
+Epoch 21 		Train Acc: 0.1942	Train loss: 713640.1944	Test Acc: 0.0974	Test loss: 241291221611.3152
+Epoch 22 		Train Acc: 0.0985	Train loss: 243286923407.3600	Test Acc: 0.1272	Test loss: 31862289321213689856.0000
+Epoch 23 		Train Acc: 0.1255	Train loss: 67742983458518597632.0000	Test Acc: 0.0810	Test loss: nan
+Epoch 24 		Train Acc: 0.0794	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 25 		Train Acc: 0.0984	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 26 		Train Acc: 0.0976	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 27 		Train Acc: 0.1007	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 28 		Train Acc: 0.0974	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 29 		Train Acc: 0.1009	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 30 		Train Acc: 0.0989	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 31 		Train Acc: 0.0985	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 32 		Train Acc: 0.0994	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 33 		Train Acc: 0.0971	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 34 		Train Acc: 0.0980	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 35 		Train Acc: 0.1001	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 36 		Train Acc: 0.0976	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 37 		Train Acc: 0.1009	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 38 		Train Acc: 0.0987	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 39 		Train Acc: 0.0990	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 40 		Train Acc: 0.0993	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 41 		Train Acc: 0.0978	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 42 		Train Acc: 0.0991	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 43 		Train Acc: 0.0982	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 44 		Train Acc: 0.0998	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 45 		Train Acc: 0.0966	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 46 		Train Acc: 0.0979	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 47 		Train Acc: 0.1004	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 48 		Train Acc: 0.0981	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 49 		Train Acc: 0.1002	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 50 		Train Acc: 0.0979	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 51 		Train Acc: 0.1004	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 52 		Train Acc: 0.0979	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 53 		Train Acc: 0.1000	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 54 		Train Acc: 0.0978	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 55 		Train Acc: 0.1003	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 56 		Train Acc: 0.0988	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 57 		Train Acc: 0.0985	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 58 		Train Acc: 0.0976	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 59 		Train Acc: 0.1010	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 60 		Train Acc: 0.0986	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 61 		Train Acc: 0.0990	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 62 		Train Acc: 0.0979	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 63 		Train Acc: 0.1003	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 64 		Train Acc: 0.0992	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 65 		Train Acc: 0.0976	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 66 		Train Acc: 0.0979	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 67 		Train Acc: 0.1001	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 68 		Train Acc: 0.0972	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 69 		Train Acc: 0.1014	Train loss: nan	Test Acc: 0.0980	Test loss: nan
+Epoch 70 		Train Acc: 0.0971	Train loss: nan	Test Acc: 0.0980	Test loss: nan
