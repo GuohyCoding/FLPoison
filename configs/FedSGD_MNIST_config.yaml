@@ -11,7 +11,7 @@ weight_decay: 5.0e-4
 num_clients: 1200 # number of participating clients
 batch_size: 32 # batch_size
 learning_rate: 0.01 # clients' local learning rate
-model: lenet # model architecture
+model: simplecnn # model architecture
 dataset: MNIST # dataset
 distribution: iid # data distribution
 im_iid_gamma: 0.01 # For class-imbalanced iid, smaller gamma, stronger imbalance, 0.5, 0.6 reference: centered clipping
@@ -37,6 +37,10 @@ attacks:
     - attack: PoisonedFL
       attack_params:
           scaling_factor: 8.0
+    - attack: TMRC
+      attack_params:
+          scaling_factor: 8.0
+          importance_ratio": 0.5
     - attack: IPM
       attack_params: # Parameters for attacks
           scaling_factor: 0.5 # 0.5, 100
@@ -134,9 +138,7 @@ attacks:
           malicous_epochs: 1
           source_label: 3
           target_label: 7
-    - attack: PoisonedFL
-      attack_params:
-          scaling_factor: 8.0
+
 
 defenses:
     - defense: Mean
