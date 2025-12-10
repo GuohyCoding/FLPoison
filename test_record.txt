@@ -4,4 +4,4 @@ python main.py --config configs/FedSGD_MNIST_config.yaml --attack PoisonedFL --n
 # python main.py --config configs/FedSGD_MNIST_config.yaml --attack PoisonedFL --num_adv 200 --defense Median --algorithm FedAvg --dataset MNIST --model simplecnn --epochs 2000 --local_epochs 1
 
 # 批量测试
-python batchrun.py -data MNIST -model simplecnn -algorithms FedSGD -distributions iid -attacks PoisonedFL -defenses MeanNorm Median Krum MultiKrum -gidx 1 -maxp 4
+python batchrun.py -data MNIST -model simplecnn -algorithms FedSGD -distributions iid -attacks TMRC -defenses MeanNorm Median Krum MultiKrum -gidx 1 -maxp 4
