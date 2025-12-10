@@ -74,6 +74,10 @@ class Client(Worker):
         self.test_dataset = test_dataset
         # 初始化全局轮次计数器，跟踪客户端参与情况
         self.global_epoch = 0
+        # XXX???????????????????????????
+        self.prev_local_update = None
+        # XXX???????????????????
+        self.local_cos_history = []
         # 通过工厂函数创建模型，保证结构与全局配置一致
         self.model = get_model(args)
         # 初始化优化器与学习率调度器，决定参数更新策略
@@ -306,6 +310,26 @@ class Client(Worker):
             # 恶意客户端可在上报前对更新施加篡改
             if self.category == "attacker" and "non_omniscient" in self.attributes:
                 self.update = self.non_omniscient()
+
+        # XXX???????????????????????????
+        # cos_similarity = None
+        # if self.prev_local_update is not None and self.update is not None:
+        #     try:
+        #         prev_vec = torch.as_tensor(
+        #             self.prev_local_update, device=self.args.device).flatten().float()
+        #         cur_vec = torch.as_tensor(
+        #             self.update, device=self.args.device).flatten().float()
+        #         prev_norm = torch.norm(prev_vec)
+        #         cur_norm = torch.norm(cur_vec)
+        #         if prev_norm > 0 and cur_norm > 0:
+        #             cos_similarity = torch.dot(prev_vec, cur_vec) / (prev_norm * cur_norm)
+        #             cos_similarity = float(cos_similarity.detach().cpu().item())
+        #     except Exception:
+        #         cos_similarity = None
+        # if cos_similarity is not None:
+        #     print(f"Client {self.worker_id} local cos: {cos_similarity:.6f}")
+        # self.prev_local_update = (self.update.clone() if isinstance(self.update, torch.Tensor)
+        #                           else torch.as_tensor(self.update).clone() if self.update is not None else None)
 
         # 成功准备更新后，推进全局通信轮次计数
         self.global_epoch += 1
