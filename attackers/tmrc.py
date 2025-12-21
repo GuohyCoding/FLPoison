@@ -26,7 +26,13 @@ class TMRC(MPBase, Client):
         self.default_attack_params = {
             "scaling_factor": 10000.0,
             # ratio of parameters considered important (top-|w|); defaults to 10%
-            "importance_ratio": 0.5,
+            "importance_ratio": 0.8,
+            # cap malicious norm to at most X times benign mean norm to avoid exploding losses
+            "max_norm_ratio": 5.0,
+            # absolute ceiling on malicious vector norm regardless of benign scale
+            "max_attack_norm": 500.0,
+            # benign rounds required before fixing the anchor norm (median of first k rounds)
+            "anchor_warmup_rounds": 5,
         }
         self.update_and_set_attr()
 
@@ -42,9 +48,13 @@ class TMRC(MPBase, Client):
         self.last_grad_vec = None
         # 缓存上一轮的重要参数掩码，便于比较掩码方向变化
         self.prev_importance_mask = None
+        # 记录早期 benign 更新范数，锚定攻击尺度，防止攻击跟随自身放大而失控
+        self.benign_norm_anchor = None
+        self._anchor_samples = []
 
     def omniscient(self, clients):
         # 只对攻击者客户端注入恶意更新，其他客户端保持正常
+        benign_clients = [c for c in clients if c.category != "attacker"]
         attackers = [
             client for client in clients
             if client.category == "attacker"
@@ -109,6 +119,15 @@ class TMRC(MPBase, Client):
                 self.last_50_global_vec = current_global_vec.clone()
             return benign_updates
 
+        benign_norm_value = 0.0
+        if benign_clients:
+            benign_updates_np = np.stack(
+                [np.array(client.update, copy=True) for client in benign_clients], axis=0
+            ).astype(np.float32)
+            benign_mean = np.mean(benign_updates_np, axis=0)
+            benign_norm_value = float(np.linalg.norm(benign_mean))
+            if benign_norm_value > 0:
+                self._update_benign_anchor(benign_norm_value)
         active_dim = int(importance_mask.sum().item())
         k_99 = max(1, int(active_dim * 0.99))
         sf = float(self.current_scaling_factor)
@@ -143,6 +162,35 @@ class TMRC(MPBase, Client):
         else:
             lamda_succ = sf * history_norm
 
+        max_ratio = max(float(getattr(self, "max_norm_ratio", 0.0)), 0.0)
+        max_attack_norm = float(getattr(self, "max_attack_norm", 0.0))
+        base_norm_for_cap = self.benign_norm_anchor
+        if (base_norm_for_cap is None or base_norm_for_cap <= 0) and benign_norm_value > 0:
+            base_norm_for_cap = benign_norm_value
+
+        cap_value = None
+        if max_ratio > 0.0 and base_norm_for_cap is not None and base_norm_for_cap > 0.0:
+            cap_value = base_norm_for_cap * max_ratio
+        if max_attack_norm > 0.0:
+            cap_value = (
+                max_attack_norm if cap_value is None else min(cap_value, max_attack_norm)
+            )
+
+        clipped = False
+        if cap_value is not None and cap_value > 0.0:
+            lamda_cap = torch.tensor(
+                cap_value,
+                dtype=lamda_succ.dtype,
+                device=lamda_succ.device,
+            )
+            if lamda_succ > lamda_cap:
+                lamda_succ = lamda_cap
+                clipped = True
+
+        if clipped and history_norm.item() > eps:
+            sf = lamda_succ.item() / (history_norm.item() + eps)
+            self.current_scaling_factor = sf
+
         # 按残差方向生成恶意更新（仅在重要参数上放大），其余维度将被 benign 均值覆盖
         mal_update = lamda_succ * deviation
         mal_update_np = mal_update.detach().cpu().numpy().astype(np.float32)
@@ -166,9 +214,6 @@ class TMRC(MPBase, Client):
             self.last_50_global_vec = current_global_vec.clone()
 
         if current_epoch % 50 == 0:
-            benign_clients = [c for c in clients if c.category != "attacker"]
-            benign_updates = np.stack([np.array(c.update, copy=True) for c in benign_clients], axis=0)
-            benign_norm = np.linalg.norm(benign_updates.mean(axis=0))
             cos = torch.nn.functional.cosine_similarity(
                 mal_update.flatten(), history_vec.flatten(), dim=0
             ).item()
@@ -176,7 +221,7 @@ class TMRC(MPBase, Client):
                 f"[TMRC debug] epoch={current_epoch}, sf={sf:.2e}, "
                 f"hist_norm={history_norm.item():.2e}, mal_norm={torch.norm(mal_update).item():.2e}, "
                 f"ratio_mal_hist={torch.norm(mal_update).item()/history_norm.item():.2e}, "
-                f"ratio_mal_benign={torch.norm(mal_update).item()/(benign_norm+1e-9):.2e}, "
+                f"ratio_mal_benign={torch.norm(mal_update).item()/(benign_norm_value+1e-9):.2e}, "
                 f"cos_mal_hist={cos:.3f}"
             )
 
@@ -237,3 +282,19 @@ class TMRC(MPBase, Client):
             # ensure at least one dimension is active
             mask_vec[0] = 1.0
         return mask_vec
+
+    def _update_benign_anchor(self, benign_norm_value):
+        """
+        Track an early benign norm anchor so attack magnitude does not
+        snowball with the diverging global training dynamics.
+        """
+        warmup = max(int(getattr(self, "anchor_warmup_rounds", 5)), 1)
+        self._anchor_samples.append(float(benign_norm_value))
+        if len(self._anchor_samples) > warmup:
+            self._anchor_samples = self._anchor_samples[-warmup:]
+
+        if self.benign_norm_anchor is None and len(self._anchor_samples) >= warmup:
+            self.benign_norm_anchor = float(np.median(self._anchor_samples))
+        elif self.benign_norm_anchor is not None and benign_norm_value < self.benign_norm_anchor:
+            # allow anchor to decrease smoothly if benign updates shrink again
+            self.benign_norm_anchor = 0.9 * self.benign_norm_anchor + 0.1 * benign_norm_value

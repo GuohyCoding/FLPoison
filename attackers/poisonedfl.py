@@ -22,7 +22,7 @@ class PoisonedFL(MPBase, Client):
     def __init__(self, args, worker_id, train_dataset, test_dataset):
         Client.__init__(self, args, worker_id, train_dataset, test_dataset)
         # 沿用 MXNet 参考实现的默认放大系数，方便与原结果对齐；脚本参数可覆盖以做消融。
-        self.default_attack_params = {"scaling_factor": 10000.0}  # scaling_factor设为8防止溢出
+        self.default_attack_params = {"scaling_factor": 8.0}  # scaling_factor设为8防止溢出
         self.update_and_set_attr()
 
         self.current_scaling_factor = float(self.scaling_factor)

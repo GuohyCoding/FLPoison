@@ -113,7 +113,7 @@ def get_configs(dataset, algorithm, distribution, defense):
     """
     params = {
         "MNIST": {
-            "FedSGD": {"epoch": 2000, "lr": 0.01},
+            "FedSGD": {"epoch": 1000, "lr": 0.01},
             "FedOpt": {"epoch": 100, "lr": 0.01}
         },
         "CIFAR10": {
