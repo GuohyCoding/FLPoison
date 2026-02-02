@@ -1,0 +1,19 @@
+seed: 42, epochs: 2000, algorithm: FedSGD, optimizer: SGD, momentum: 0.9, weight_decay: 0.0005, num_clients: 100, batch_size: 16, learning_rate: 0.05, model: simplecnn, dataset: MNIST, distribution: iid, im_iid_gamma: 0.01, tail_cls_from: 4, dirichlet_alpha: 0.5, cache_partition: False, gpu_idx: [1], num_workers: 0, record_time: False, num_adv: 40, attack: FangAttack, defense: FLDetector, attack_params: {'stop_threshold': 1e-05}, defense_params: None, benchmark: False, num_training_sample: 60000, num_channels: 1, num_classes: 10, mean: (0.1307,), std: (0.3081,), device: cuda:1, output: ./logs/FedSGD/MNIST_simplecnn/iid/MNIST_simplecnn_iid_FangAttack_FLDetector_2000_100_0.05_FedSGD.txt
+
+Started on Tue Jan 27 21:10:15 2026
+Generating new indices
+Doing iid partition
+iid partition finished
+Data partitioned
+Clients and server are initialized
+Starting Training...
+Epoch 0    Train Acc: 0.1150  Train loss: 0.1438  Cos: nan  L2: 0.0209  Test Acc: 0.1911	Test loss: 0.1431
+Epoch 1    Train Acc: 0.1694  Train loss: 0.1431  Cos: 0.917  L2: 0.0415  Test Acc: 0.2434	Test loss: 0.1412
+Epoch 2    Train Acc: 0.2444  Train loss: 0.1412  Cos: 0.973  L2: 0.0591  Test Acc: 0.3119	Test loss: 0.1388
+Epoch 3    Train Acc: 0.3038  Train loss: 0.1390  Cos: 0.976  L2: 0.0703  Test Acc: 0.3857	Test loss: 0.1361
+Epoch 4    Train Acc: 0.4069  Train loss: 0.1360  Cos: 0.975  L2: 0.0830  Test Acc: 0.4387	Test loss: 0.1326
+Epoch 5    Train Acc: 0.4319  Train loss: 0.1329  Cos: 0.981  L2: 0.0957  Test Acc: 0.4667	Test loss: 0.1279
+Epoch 6    Train Acc: 0.4562  Train loss: 0.1281  Cos: 0.984  L2: 0.1080  Test Acc: 0.5045	Test loss: 0.1219
+Epoch 7    Train Acc: 0.4800  Train loss: 0.1222  Cos: 0.982  L2: 0.1273  Test Acc: 0.5554	Test loss: 0.1138
+Epoch 8    Train Acc: 0.5387  Train loss: 0.1149  Cos: 0.984  L2: 0.1476  Test Acc: 0.6050	Test loss: 0.1033
+Epoch 9    Train Acc: 0.6044  Train loss: 0.1033  Cos: 0.981  L2: 0.1668  Test Acc: 0.6607	Test loss: 0.0906

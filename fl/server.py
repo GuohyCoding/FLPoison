@@ -8,10 +8,11 @@
 """
 
 import numpy as np
+import torch
 from aggregators import get_aggregator
 from fl.algorithms import get_algorithm_handler
 from fl.models import get_model
-from fl.models.model_utils import model2vec
+from fl.models.model_utils import model2vec_torch
 from fl.worker import Worker
 from global_utils import TimingRecorder
 
@@ -23,9 +24,9 @@ class Server(Worker):
     属性:
         clients (List[Client]): 当前参与训练的客户端列表。
         global_model (torch.nn.Module): 持有的全局模型副本。
-        global_weights_vec (numpy.ndarray): 扁平化的全局模型参数，用于聚合与广播。
+        global_weights_vec (torch.Tensor): 扁平化的全局模型参数，用于聚合与广播。
         aggregator (AggregatorBase): 决定如何聚合客户端更新的策略对象。
-        aggregated_update (numpy.ndarray): 最近一次聚合后的更新向量。
+        aggregated_update (torch.Tensor): 最近一次聚合后的更新向量。
         test_dataset (Dataset): 用于评估的测试数据集引用。
         train_dataset (Dataset): 可选训练数据集，部分防御（如 FLTrust）需要。
         time_recorder (TimingRecorder): 选用的计时器，用于性能分析。
@@ -82,11 +83,10 @@ class Server(Worker):
         # 初始化全局模型，使其结构与客户端保持一致
         self.global_model = get_model(args)
         # 将模型参数展平，方便执行向量化聚合
-        self.global_weights_vec = model2vec(self.global_model)
+        self.global_weights_vec = model2vec_torch(self.global_model)
 
         # 初始化聚合后更新的缓存向量，初始为全零
-        self.aggregated_update = np.zeros_like(
-            self.global_weights_vec, dtype=np.float32)
+        self.aggregated_update = torch.zeros_like(self.global_weights_vec)
 
         # 根据防御配置选择聚合器，实现鲁棒或定制化的聚合策略（工厂方法）
         self.aggregator = get_aggregator(
@@ -165,8 +165,15 @@ class Server(Worker):
         """
         self.global_epoch = global_epoch
         # 将各客户端的更新向量堆叠为二维数组，供聚合器统一处理
-        self.client_updates = np.array(
-            [client.update for client in self.clients])
+        device = self.global_weights_vec.device
+        updates = []
+        for client in self.clients:
+            upd = client.update
+            if torch.is_tensor(upd):
+                updates.append(upd.to(device=device))
+            else:
+                updates.append(torch.as_tensor(upd, device=device))
+        self.client_updates = torch.stack(updates, dim=0) if updates else torch.empty((0, 0), device=device)
 
     def aggregation(self):
         """
@@ -207,6 +214,18 @@ class Server(Worker):
             global_weights_vec=self.global_weights_vec,
             global_epoch=self.global_epoch,
         )
+        if not torch.is_tensor(self.aggregated_update):
+            self.aggregated_update = torch.as_tensor(
+                self.aggregated_update, device=self.global_weights_vec.device
+            )
+
+        # 增加L2 clip防止梯度爆炸
+        max_norm = 10000.0
+        update_norm = torch.linalg.norm(self.aggregated_update)
+        if update_norm > max_norm:
+            self.aggregated_update = self.aggregated_update * (
+                max_norm / (update_norm + 1e-12)
+            )
 
     def update_global(self):
         """

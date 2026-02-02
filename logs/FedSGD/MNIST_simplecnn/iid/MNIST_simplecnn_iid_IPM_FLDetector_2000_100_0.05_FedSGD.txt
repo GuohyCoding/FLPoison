@@ -1,0 +1,478 @@
+seed: 42, epochs: 2000, algorithm: FedSGD, optimizer: SGD, momentum: 0.9, weight_decay: 0.0005, num_clients: 100, batch_size: 16, learning_rate: 0.05, model: simplecnn, dataset: MNIST, distribution: iid, im_iid_gamma: 0.01, tail_cls_from: 4, dirichlet_alpha: 0.5, cache_partition: False, gpu_idx: [1], num_workers: 0, record_time: False, num_adv: 20, attack: IPM, defense: FLDetector, attack_params: {'scaling_factor': 0.5}, defense_params: None, benchmark: False, num_training_sample: 60000, num_channels: 1, num_classes: 10, mean: (0.1307,), std: (0.3081,), device: cuda:1, output: ./logs/FedSGD/MNIST_simplecnn/iid/MNIST_simplecnn_iid_IPM_FLDetector_2000_100_0.05_FedSGD.txt
+
+Started on Sat Jan 24 22:19:53 2026
+Generating new indices
+Doing iid partition
+iid partition finished
+Data partitioned
+Clients and server are initialized
+Starting Training...
+Epoch 0    Train Acc: 0.1150  Train loss: 0.1438  Cos: nan  L2: 0.0281  Test Acc: 0.2051	Test loss: 0.1427
+Epoch 1    Train Acc: 0.1875  Train loss: 0.1427  Cos: 0.978  L2: 0.0512  Test Acc: 0.2493	Test loss: 0.1405
+Epoch 2    Train Acc: 0.2375  Train loss: 0.1405  Cos: 0.970  L2: 0.0691  Test Acc: 0.3225	Test loss: 0.1377
+Epoch 3    Train Acc: 0.3212  Train loss: 0.1379  Cos: 0.975  L2: 0.0838  Test Acc: 0.4138	Test loss: 0.1343
+Epoch 4    Train Acc: 0.4288  Train loss: 0.1343  Cos: 0.972  L2: 0.0992  Test Acc: 0.4470	Test loss: 0.1297
+Epoch 5    Train Acc: 0.4350  Train loss: 0.1301  Cos: 0.982  L2: 0.1166  Test Acc: 0.4912	Test loss: 0.1236
+Epoch 6    Train Acc: 0.4731  Train loss: 0.1238  Cos: 0.983  L2: 0.1364  Test Acc: 0.5657	Test loss: 0.1152
+Epoch 7    Train Acc: 0.5400  Train loss: 0.1155  Cos: 0.983  L2: 0.1602  Test Acc: 0.6049	Test loss: 0.1041
+Epoch 8    Train Acc: 0.5913  Train loss: 0.1054  Cos: 0.983  L2: 0.1858  Test Acc: 0.6490	Test loss: 0.0906
+Epoch 9    Train Acc: 0.6288  Train loss: 0.0909  Cos: 0.971  L2: 0.2098  Test Acc: 0.7309	Test loss: 0.0737
+Epoch 10   Train Acc: 0.7094  Train loss: 0.0760  Cos: 0.981  L2: 0.2316  Test Acc: 0.7467	Test loss: 0.0600
+Epoch 11   Train Acc: 0.7462  Train loss: 0.0614  Cos: 0.912  L2: 0.2470  Test Acc: 0.7088	Test loss: 0.0517
+Epoch 12   Train Acc: 0.6963  Train loss: 0.0535  Cos: 0.779  L2: 0.2558  Test Acc: 0.7082	Test loss: 0.0559
+Epoch 13   Train Acc: 0.7144  Train loss: 0.0548  Cos: 0.507  L2: 0.2722  Test Acc: 0.5917	Test loss: 0.0838
+Epoch 14   Train Acc: 0.5844  Train loss: 0.0861  Cos: -0.072  L2: 0.4957  Test Acc: 0.6044	Test loss: 0.2565
+Epoch 15   Train Acc: 0.5962  Train loss: 0.2451  Cos: 0.137  L2: 0.5077  Test Acc: 0.4513	Test loss: 0.3208
+Epoch 16   Train Acc: 0.4338  Train loss: 0.3382  Cos: 0.241  L2: 0.8668  Test Acc: 0.4264	Test loss: 0.1296
+Epoch 17   Train Acc: 0.4331  Train loss: 0.1292  Cos: 0.943  L2: 0.8181  Test Acc: 0.4968	Test loss: 0.1006
+Epoch 18   Train Acc: 0.4988  Train loss: 0.1013  Cos: 0.996  L2: 0.7263  Test Acc: 0.5259	Test loss: 0.1138
+Epoch 19   Train Acc: 0.5075  Train loss: 0.1149  Cos: 0.996  L2: 0.6473  Test Acc: 0.5180	Test loss: 0.1173
+Epoch 20   Train Acc: 0.5188  Train loss: 0.1175  Cos: 0.996  L2: 0.5823  Test Acc: 0.5410	Test loss: 0.1159
+Epoch 21   Train Acc: 0.5262  Train loss: 0.1168  Cos: 0.996  L2: 0.5267  Test Acc: 0.5574	Test loss: 0.1118
+Epoch 22   Train Acc: 0.5275  Train loss: 0.1131  Cos: 0.996  L2: 0.4796  Test Acc: 0.5688	Test loss: 0.1053
+Epoch 23   Train Acc: 0.5587  Train loss: 0.1067  Cos: 0.995  L2: 0.4407  Test Acc: 0.5815	Test loss: 0.0970
+Epoch 24   Train Acc: 0.5719  Train loss: 0.0974  Cos: 0.994  L2: 0.4083  Test Acc: 0.5958	Test loss: 0.0877
+Epoch 25   Train Acc: 0.5925  Train loss: 0.0886  Cos: 0.992  L2: 0.3814  Test Acc: 0.6252	Test loss: 0.0772
+Epoch 26   Train Acc: 0.6369  Train loss: 0.0782  Cos: 0.990  L2: 0.3605  Test Acc: 0.6789	Test loss: 0.0649
+Epoch 27   Train Acc: 0.6719  Train loss: 0.0679  Cos: 0.987  L2: 0.3468  Test Acc: 0.7257	Test loss: 0.0521
+Epoch 28   Train Acc: 0.7288  Train loss: 0.0528  Cos: 0.987  L2: 0.3297  Test Acc: 0.7731	Test loss: 0.0432
+Epoch 29   Train Acc: 0.7581  Train loss: 0.0459  Cos: 0.973  L2: 0.3100  Test Acc: 0.8099	Test loss: 0.0373
+Epoch 30   Train Acc: 0.8081  Train loss: 0.0394  Cos: 0.953  L2: 0.2864  Test Acc: 0.8161	Test loss: 0.0363
+Epoch 31   Train Acc: 0.8037  Train loss: 0.0379  Cos: 0.923  L2: 0.2589  Test Acc: 0.8406	Test loss: 0.0313
+Epoch 32   Train Acc: 0.8438  Train loss: 0.0325  Cos: 0.941  L2: 0.2505  Test Acc: 0.8661	Test loss: 0.0275
+Epoch 33   Train Acc: 0.8644  Train loss: 0.0268  Cos: 0.965  L2: 0.2244  Test Acc: 0.8596	Test loss: 0.0289
+Epoch 34   Train Acc: 0.8381  Train loss: 0.0315  Cos: 0.928  L2: 0.2075  Test Acc: 0.8742	Test loss: 0.0268
+Epoch 35   Train Acc: 0.8688  Train loss: 0.0286  Cos: 0.972  L2: 0.1907  Test Acc: 0.8751	Test loss: 0.0279
+Epoch 36   Train Acc: 0.8675  Train loss: 0.0317  Cos: 0.869  L2: 0.1774  Test Acc: 0.8838	Test loss: 0.0256
+Epoch 37   Train Acc: 0.9014  Train loss: 0.0583  Cos: 0.921  L2: 0.1632  Test Acc: 0.8957	Test loss: 0.0234
+Epoch 38   Train Acc: 0.9012  Train loss: 0.0220  Cos: 0.968  L2: 0.1501  Test Acc: 0.9009	Test loss: 0.0225
+Epoch 39   Train Acc: 0.8794  Train loss: 0.0260  Cos: 0.923  L2: 0.1350  Test Acc: 0.9077	Test loss: 0.0205
+Epoch 40   Train Acc: 0.8838  Train loss: 0.0247  Cos: 0.940  L2: 0.1319  Test Acc: 0.9158	Test loss: 0.0184
+Epoch 41   Train Acc: 0.9137  Train loss: 0.0193  Cos: 0.986  L2: 0.1264  Test Acc: 0.9155	Test loss: 0.0183
+Epoch 42   Train Acc: 0.9081  Train loss: 0.0198  Cos: 0.969  L2: 0.1142  Test Acc: 0.9144	Test loss: 0.0184
+Epoch 43   Train Acc: 0.9019  Train loss: 0.0199  Cos: 0.964  L2: 0.1059  Test Acc: 0.9166	Test loss: 0.0179
+Epoch 44   Train Acc: 0.9069  Train loss: 0.0195  Cos: 0.950  L2: 0.0999  Test Acc: 0.9201	Test loss: 0.0168
+Epoch 45   Train Acc: 0.9062  Train loss: 0.0204  Cos: 0.946  L2: 0.1032  Test Acc: 0.9249	Test loss: 0.0156
+Epoch 46   Train Acc: 0.9075  Train loss: 0.0187  Cos: 0.958  L2: 0.1009  Test Acc: 0.9281	Test loss: 0.0152
+Epoch 47   Train Acc: 0.9250  Train loss: 0.0155  Cos: 0.955  L2: 0.0950  Test Acc: 0.9287	Test loss: 0.0151
+Epoch 48   Train Acc: 0.9169  Train loss: 0.0165  Cos: 0.949  L2: 0.0885  Test Acc: 0.9270	Test loss: 0.0147
+Epoch 49   Train Acc: 0.9250  Train loss: 0.0156  Cos: 0.944  L2: 0.0816  Test Acc: 0.9324	Test loss: 0.0139
+Epoch 50   Train Acc: 0.9381  Train loss: 0.0138  Cos: 0.937  L2: 0.0824  Test Acc: 0.9394	Test loss: 0.0128
+Epoch 51   Train Acc: 0.9294  Train loss: 0.0148  Cos: 0.971  L2: 0.0800  Test Acc: 0.9426	Test loss: 0.0125
+Epoch 52   Train Acc: 0.9431  Train loss: 0.0133  Cos: 0.964  L2: 0.0706  Test Acc: 0.9422	Test loss: 0.0125
+Epoch 53   Train Acc: 0.9419  Train loss: 0.0130  Cos: 0.944  L2: 0.0659  Test Acc: 0.9433	Test loss: 0.0121
+Epoch 54   Train Acc: 0.9381  Train loss: 0.0136  Cos: 0.949  L2: 0.0633  Test Acc: 0.9450	Test loss: 0.0116
+Epoch 55   Train Acc: 0.9419  Train loss: 0.0124  Cos: 0.976  L2: 0.0605  Test Acc: 0.9466	Test loss: 0.0114
+Epoch 56   Train Acc: 0.9506  Train loss: 0.0115  Cos: 0.964  L2: 0.0570  Test Acc: 0.9472	Test loss: 0.0114
+Epoch 57   Train Acc: 0.9356  Train loss: 0.0122  Cos: 0.929  L2: 0.0552  Test Acc: 0.9481	Test loss: 0.0111
+Epoch 58   Train Acc: 0.9400  Train loss: 0.0124  Cos: 0.954  L2: 0.0542  Test Acc: 0.9508	Test loss: 0.0107
+Epoch 59   Train Acc: 0.9456  Train loss: 0.0114  Cos: 0.973  L2: 0.0546  Test Acc: 0.9519	Test loss: 0.0104
+Epoch 60   Train Acc: 0.9494  Train loss: 0.0110  Cos: 0.972  L2: 0.0517  Test Acc: 0.9517	Test loss: 0.0104
+Epoch 61   Train Acc: 0.9350  Train loss: 0.0127  Cos: 0.933  L2: 0.0460  Test Acc: 0.9528	Test loss: 0.0102
+Epoch 62   Train Acc: 0.9437  Train loss: 0.0115  Cos: 0.882  L2: 0.0476  Test Acc: 0.9541	Test loss: 0.0098
+Epoch 63   Train Acc: 0.9525  Train loss: 0.0103  Cos: 0.934  L2: 0.0469  Test Acc: 0.9551	Test loss: 0.0096
+Epoch 64   Train Acc: 0.9563  Train loss: 0.0097  Cos: 0.956  L2: 0.0463  Test Acc: 0.9538	Test loss: 0.0094
+Epoch 65   Train Acc: 0.9600  Train loss: 0.0091  Cos: 0.945  L2: 0.0444  Test Acc: 0.9549	Test loss: 0.0093
+Epoch 66   Train Acc: 0.9456  Train loss: 0.0118  Cos: 0.866  L2: 0.0460  Test Acc: 0.9583	Test loss: 0.0089
+Epoch 67   Train Acc: 0.9525  Train loss: 0.0109  Cos: 0.953  L2: 0.0441  Test Acc: 0.9583	Test loss: 0.0087
+Epoch 68   Train Acc: 0.9494  Train loss: 0.0096  Cos: 0.964  L2: 0.0394  Test Acc: 0.9576	Test loss: 0.0087
+Epoch 69   Train Acc: 0.9581  Train loss: 0.0092  Cos: 0.942  L2: 0.0364  Test Acc: 0.9575	Test loss: 0.0086
+Epoch 70   Train Acc: 0.9531  Train loss: 0.0101  Cos: 0.919  L2: 0.0345  Test Acc: 0.9583	Test loss: 0.0085
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 65]
+Epoch 71   Train Acc: 0.9513  Train loss: 0.0088  Cos: -0.898  L2: 0.0229  Test Acc: 0.9571	Test loss: 0.0087
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 36 55 65]
+Epoch 72   Train Acc: 0.9581  Train loss: 0.0101  Cos: 0.796  L2: 0.0261  Test Acc: 0.9551	Test loss: 0.0092
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 73   Train Acc: 0.9494  Train loss: 0.0106  Cos: 0.887  L2: 0.0403  Test Acc: 0.9440	Test loss: 0.0110
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 74   Train Acc: 0.9294  Train loss: 0.0142  Cos: 0.952  L2: 0.0671  Test Acc: 0.9045	Test loss: 0.0183
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 95]
+Epoch 75   Train Acc: 0.9003  Train loss: 0.0607  Cos: 0.966  L2: 0.1245  Test Acc: 0.7377	Test loss: 0.0603
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 52]
+Epoch 76   Train Acc: 0.7444  Train loss: 0.0626  Cos: 0.971  L2: 0.3042  Test Acc: 0.1342	Test loss: 0.5151
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 52]
+Epoch 77   Train Acc: 0.1313  Train loss: 0.5174  Cos: 0.932  L2: 1.1389  Test Acc: 0.1010	Test loss: 6.5858
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 52]
+Epoch 78   Train Acc: 0.1000  Train loss: 6.5209  Cos: 0.901  L2: 4.4119  Test Acc: 0.1010	Test loss: 362.6630
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 79   Train Acc: 0.1037  Train loss: 356.4643  Cos: 0.965  L2: 89.7797  Test Acc: 0.1010	Test loss: 16530575.7200
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 80   Train Acc: 0.0969  Train loss: 16115550.1200  Cos: 0.988  L2: 9999.9990  Test Acc: 0.1010	Test loss: 2056094467688182.5000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 81   Train Acc: 0.1081  Train loss: 2012946193239244.7500  Cos: 0.994  L2: 10000.0000  Test Acc: 0.1010	Test loss: 32481474000659572.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 82   Train Acc: 0.0944  Train loss: 32202832055673816.0000  Cos: 0.999  L2: 10000.0000  Test Acc: 0.1010	Test loss: 163747344772528864.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 83   Train Acc: 0.0887  Train loss: 161993087456609568.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 516469203898975104.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 84   Train Acc: 0.0963  Train loss: 509934039165839616.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1259363995488085760.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 85   Train Acc: 0.0988  Train loss: 1236310536975212800.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 2609325780979100672.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 86   Train Acc: 0.1087  Train loss: 2569105543380472832.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 4831268457347258368.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 87   Train Acc: 0.1025  Train loss: 4670280856743780352.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 8238114054094449664.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 88   Train Acc: 0.1056  Train loss: 8087401983388816384.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 13191475194096744448.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 89   Train Acc: 0.0975  Train loss: 13163698388414695424.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 20101309868393758720.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 90   Train Acc: 0.1025  Train loss: 19851667881961730048.0000  Cos: 1.000  L2: 9999.9980  Test Acc: 0.1010	Test loss: 29424046248794279936.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 91   Train Acc: 0.0963  Train loss: 29125281201048195072.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 41665531747826573312.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 92   Train Acc: 0.1075  Train loss: 41416906120036540416.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 57379333128901754880.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 93   Train Acc: 0.1044  Train loss: 56667853852839346176.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 77167687129113804800.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 94   Train Acc: 0.0969  Train loss: 76298914842194788352.0000  Cos: 1.000  L2: 10000.0010  Test Acc: 0.1010	Test loss: 101682081947838693376.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 95   Train Acc: 0.1069  Train loss: 99331178668652986368.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 131619292947884621824.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 96   Train Acc: 0.0994  Train loss: 131475086558397874176.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 167725738990930132992.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 97   Train Acc: 0.0981  Train loss: 166807998270095884288.0000  Cos: 1.000  L2: 10000.0010  Test Acc: 0.1010	Test loss: 210790960081771495424.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 98   Train Acc: 0.1019  Train loss: 208470341729750646784.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 261667850774811213824.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 99   Train Acc: 0.1006  Train loss: 256049596623314518016.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 321239398212727996416.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 100  Train Acc: 0.1050  Train loss: 316333628419344498688.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 390450757987439411200.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 101  Train Acc: 0.1087  Train loss: 379261215494270681088.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 470279394162745933824.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 102  Train Acc: 0.0988  Train loss: 469303541106900926464.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 561762776974989393920.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 103  Train Acc: 0.1150  Train loss: 549659065660848734208.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 665995750549439512576.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 104  Train Acc: 0.1031  Train loss: 655589682444203982848.0000  Cos: 1.000  L2: 9999.9980  Test Acc: 0.1010	Test loss: 784088674418737152000.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 105  Train Acc: 0.1100  Train loss: 756962823882271358976.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 917253104984312774656.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 106  Train Acc: 0.1106  Train loss: 890486697219050307584.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1066684624323423502336.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 107  Train Acc: 0.0963  Train loss: 1056195517497178587136.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1233677265847045324800.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 108  Train Acc: 0.0950  Train loss: 1210687963166291263488.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1419535712234128539648.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 109  Train Acc: 0.0994  Train loss: 1408229539395128000512.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 1625657114803007127552.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 110  Train Acc: 0.1087  Train loss: 1602711374962941231104.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1853461605671309148160.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 111  Train Acc: 0.1169  Train loss: 1802125728060823568384.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 2104409604244898578432.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 112  Train Acc: 0.0919  Train loss: 2081328012477648076800.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 2379946100822496509952.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 113  Train Acc: 0.0998  Train loss: 6038514010799220981760.0000  Cos: 1.000  L2: 9999.9980  Test Acc: 0.1010	Test loss: 2681827113075109527552.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 114  Train Acc: 0.1019  Train loss: 2624548972420469358592.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 3011427361749062909952.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 115  Train Acc: 0.1169  Train loss: 2938236048204259393536.0000  Cos: 1.000  L2: 10000.0010  Test Acc: 0.1010	Test loss: 3370576071878385336320.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 116  Train Acc: 0.1175  Train loss: 3254457272758247620608.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 3760886925993760522240.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 117  Train Acc: 0.1000  Train loss: 3711567075805562929152.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 4184276853129080733696.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 118  Train Acc: 0.1131  Train loss: 4098422756915230539776.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 4642296917990990938112.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 119  Train Acc: 0.0887  Train loss: 4602073369312491995136.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 5137060259064248795136.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 120  Train Acc: 0.0919  Train loss: 5112581024579649011712.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 5670159644838406914048.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 121  Train Acc: 0.1131  Train loss: 5474270084316612526080.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 6243944160985583976448.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 122  Train Acc: 0.1006  Train loss: 6097852584989164568576.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 6859961958608642506752.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 123  Train Acc: 0.1125  Train loss: 6676338282348793561088.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 7520741788181794390016.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 124  Train Acc: 0.1025  Train loss: 7341418064628845379584.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 8227860261305749340160.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 125  Train Acc: 0.1031  Train loss: 8051782700839011876864.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 8984296417260581421056.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 126  Train Acc: 0.1025  Train loss: 8909254210062501543936.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 9790793266668213633024.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 127  Train Acc: 0.0881  Train loss: 9706741780453083054080.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 10650927308945361993728.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 128  Train Acc: 0.1025  Train loss: 10367434640113111400448.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 11566568212126255546368.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 129  Train Acc: 0.0988  Train loss: 11511298561444386177024.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 12539891216632348934144.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 130  Train Acc: 0.1019  Train loss: 12264369932200981823488.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 13573173202823652835328.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 131  Train Acc: 0.1013  Train loss: 13457985507051287085056.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 14669688631704279842816.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 132  Train Acc: 0.0956  Train loss: 14519350418752560693248.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 15830602761038934835200.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 133  Train Acc: 0.1125  Train loss: 15228354055896335122432.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 17060046134779853144064.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 134  Train Acc: 0.1013  Train loss: 16960974558564672602112.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 18359011722785839906816.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 135  Train Acc: 0.0981  Train loss: 17986676095320747671552.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 19731032707951673475072.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 136  Train Acc: 0.0975  Train loss: 19540847486319028338688.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 21178326803246181515264.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 137  Train Acc: 0.1031  Train loss: 20633862626596551131136.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 22703966749843288752128.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 138  Train Acc: 0.1019  Train loss: 22162236329324342935552.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 24309963381557891694592.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 139  Train Acc: 0.1087  Train loss: 24300875625065533669376.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 26001590127124704919552.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 140  Train Acc: 0.0981  Train loss: 25827971960572018163712.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 27778387331151367766016.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 141  Train Acc: 0.1025  Train loss: 27258237638980304633856.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 29644525485419522949120.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 142  Train Acc: 0.1062  Train loss: 28914633040364532924416.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 31603657191172398383104.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 143  Train Acc: 0.0988  Train loss: 31421802242642425151488.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 33659102186803317178368.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 144  Train Acc: 0.1056  Train loss: 33189151893549259685888.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 35811858696971124473856.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 145  Train Acc: 0.1087  Train loss: 34930710172484082073600.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 38066483964579072180224.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 146  Train Acc: 0.1087  Train loss: 36959280986677380644864.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 40426621106289570217984.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 147  Train Acc: 0.0944  Train loss: 40093853363407698264064.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 42895284741621187346432.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 148  Train Acc: 0.1044  Train loss: 42141023368522091200512.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 45474103862190816624640.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 149  Train Acc: 0.0925  Train loss: 44641712003526185451520.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 48167405937248723533824.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 150  Train Acc: 0.0981  Train loss: 48232596435369078030336.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 50979502179851958222848.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 151  Train Acc: 0.0800  Train loss: 133703784742869058715648.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 53912049896648991571968.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 152  Train Acc: 0.1131  Train loss: 52084538099471996682240.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 56970136072754282102784.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 153  Train Acc: 0.1044  Train loss: 56177931880901071863808.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 60156451871955416514560.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 154  Train Acc: 0.0963  Train loss: 59958858781977777012736.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 63475519300992141099008.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 155  Train Acc: 0.1044  Train loss: 62658967078697816817664.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 66926309672857746014208.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 156  Train Acc: 0.1062  Train loss: 65631299237917952573440.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 70520458923497945563136.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 157  Train Acc: 0.0956  Train loss: 68952842313684249214976.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 74256520496712423309312.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 158  Train Acc: 0.0919  Train loss: 72579992859728463003648.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 78136319917602948251648.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 159  Train Acc: 0.0919  Train loss: 77656778266789348900864.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 82167484241105475600384.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 160  Train Acc: 0.1081  Train loss: 80336779252181080473600.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 86355251614755244212224.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 161  Train Acc: 0.0988  Train loss: 85230568544503146217472.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 90698098589693357588480.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 162  Train Acc: 0.1044  Train loss: 89286071132841352101888.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 95202156964530532384768.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 163  Train Acc: 0.1037  Train loss: 93721890955315971620864.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 99875881869264793108480.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 164  Train Acc: 0.1019  Train loss: 98374376073559621500928.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 104718773995209792421888.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 165  Train Acc: 0.1044  Train loss: 102709747114549413150720.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 109731672510694147751936.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 166  Train Acc: 0.1100  Train loss: 106931400598616249729024.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 114925100014998275489792.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 167  Train Acc: 0.0925  Train loss: 114772296262745625460736.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 120301138028635376058368.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 168  Train Acc: 0.1119  Train loss: 117026484605529242992640.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 125862156129556584464384.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 169  Train Acc: 0.0938  Train loss: 125925751492320595804160.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 131614650461185388838912.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 170  Train Acc: 0.1044  Train loss: 128557981445384916959232.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 137561274789418055499776.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 171  Train Acc: 0.1062  Train loss: 136727045497233533304832.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 143711819176033963212800.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 172  Train Acc: 0.0944  Train loss: 141957783710360309596160.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 150058372662779541716992.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 173  Train Acc: 0.0938  Train loss: 147476651509079141777408.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 156617692841226318905344.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 174  Train Acc: 0.1037  Train loss: 153725460393530362953728.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 163389623620214083026944.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 175  Train Acc: 0.1081  Train loss: 158461353077592853315584.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 170376091848630480142336.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 176  Train Acc: 0.1119  Train loss: 166681981633806991360000.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 177586784358545657692160.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 177  Train Acc: 0.1050  Train loss: 174052710233822187225088.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 185023644817089695318016.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 178  Train Acc: 0.0844  Train loss: 186025072367536510599168.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 192693809736318539792384.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 179  Train Acc: 0.1106  Train loss: 186369862190400467369984.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 200591941550834412683264.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 180  Train Acc: 0.1006  Train loss: 197361899312059233861632.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 208742414620923340521472.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 181  Train Acc: 0.0994  Train loss: 204400857185085235920896.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 217135175240480804831232.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 182  Train Acc: 0.1106  Train loss: 211304382990260967047168.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 225770011934879861702656.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 183  Train Acc: 0.1000  Train loss: 223572978847024775430144.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 234668600521921264615424.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 184  Train Acc: 0.1031  Train loss: 231647879476136523071488.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 243819082137477736038400.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 185  Train Acc: 0.1094  Train loss: 240794523866283768807424.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 253245865095373581713408.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 186  Train Acc: 0.0956  Train loss: 253024641147975304740864.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 262941090924106671456256.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 187  Train Acc: 0.0981  Train loss: 258385331448925831299072.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 272901964855480739168256.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 188  Train Acc: 0.0975  Train loss: 268095393085991715602432.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 283149574155279993405440.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 189  Train Acc: 0.1253  Train loss: 702815912993404506603520.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 293694930549733142298624.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 190  Train Acc: 0.0931  Train loss: 292253802707387921989632.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 304512681857003110268928.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 191  Train Acc: 0.0881  Train loss: 307088461721562731511808.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 315633849332491815485440.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 192  Train Acc: 0.0994  Train loss: 311486500756691366182912.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 327064670915646042669056.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 193  Train Acc: 0.0994  Train loss: 323263843065381661966336.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 338791302843853105528832.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 194  Train Acc: 0.1106  Train loss: 327473450411237228675072.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 350829523943179061035008.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 195  Train Acc: 0.0994  Train loss: 348711793588240816013312.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 363193276839255445864448.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 196  Train Acc: 0.1000  Train loss: 361280143992170867589120.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 375877760363414643802112.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 197  Train Acc: 0.1037  Train loss: 366790444413174518120448.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 388902474050002271338496.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 198  Train Acc: 0.1106  Train loss: 377301975106694600982528.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 402246146324320118374400.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 199  Train Acc: 0.1256  Train loss: 383199047005568684261376.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 415937624060635505491968.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 200  Train Acc: 0.1013  Train loss: 411218837543152787652608.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 429988254081812332019712.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 201  Train Acc: 0.1056  Train loss: 414615228282998200729600.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 444371924156923275902976.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 202  Train Acc: 0.0925  Train loss: 442977830122057996697600.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 459106520652544657588224.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 203  Train Acc: 0.1013  Train loss: 456285685636033075478528.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 474231198368240010002432.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 204  Train Acc: 0.0881  Train loss: 475813274885337112379392.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 489714216337358138114048.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 205  Train Acc: 0.0894  Train loss: 481228535302972453683200.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 505563841958247357480960.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 206  Train Acc: 0.1087  Train loss: 494297547995173519097856.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 521820986016391801864192.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 207  Train Acc: 0.0925  Train loss: 521319666015225430147072.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 538452167613651533955072.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 208  Train Acc: 0.1094  Train loss: 525678784401942352232448.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 555460505690927024570368.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 209  Train Acc: 0.1113  Train loss: 539074275641210448117760.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 572895502114763046912000.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 210  Train Acc: 0.1044  Train loss: 563385844939742171365376.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 590720075269045674311680.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 211  Train Acc: 0.0919  Train loss: 587919526007288279072768.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 608960415725718597533696.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 212  Train Acc: 0.1087  Train loss: 594885450356237122142208.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 627635476591980308332544.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 213  Train Acc: 0.0988  Train loss: 618509675956183880433664.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 646726689721122734211072.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 214  Train Acc: 0.0988  Train loss: 637211720445857839972352.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 666248214315082104963072.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 215  Train Acc: 0.1025  Train loss: 657048062434383539208192.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 686205327007354772783104.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 216  Train Acc: 0.1062  Train loss: 670350412387886131314688.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 706589298510414494040064.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 217  Train Acc: 0.1013  Train loss: 697624138232495968616448.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 727470014429476784439296.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 218  Train Acc: 0.1006  Train loss: 717001082794840386699264.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 748778480598233552781312.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 219  Train Acc: 0.1125  Train loss: 732575828423844198088704.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 770560898789538061615104.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 220  Train Acc: 0.1087  Train loss: 749692613410731015012352.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 792827923323952224534528.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 221  Train Acc: 0.1013  Train loss: 784940357271215675539456.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 815541230283618298888192.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 222  Train Acc: 0.1119  Train loss: 790891015700615962558464.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 838767508568295606321152.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 223  Train Acc: 0.0988  Train loss: 824716691773834953490432.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 862467544838831272361984.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 224  Train Acc: 0.1081  Train loss: 839765876333523882737664.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 886673505028743008092160.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 225  Train Acc: 0.0975  Train loss: 877751762290301548363776.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 911359617364823732387840.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 226  Train Acc: 0.1000  Train loss: 898206573887878858801152.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 936604109704065911357440.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 227  Train Acc: 0.1036  Train loss: 2304183132206917316771840.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 962370546556389740773376.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 228  Train Acc: 0.1050  Train loss: 963795070599686323699712.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 988633772788654672969728.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 229  Train Acc: 0.1056  Train loss: 972495912669919385223168.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1015445399508475430567936.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 230  Train Acc: 0.1150  Train loss: 980749419755213141573632.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1042788454097213915660288.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 231  Train Acc: 0.1006  Train loss: 1028418056800340459651072.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1070689004686549985525760.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 232  Train Acc: 0.1000  Train loss: 1056321952966121711730688.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1099142113947786573512704.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 233  Train Acc: 0.0900  Train loss: 1099245595282123568185344.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1128162626609986226094080.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 234  Train Acc: 0.1025  Train loss: 1100247442276222370840576.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1157757677527880391720960.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 235  Train Acc: 0.1044  Train loss: 1132662345590041271599104.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1187912278548970981031936.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 236  Train Acc: 0.1031  Train loss: 1163094725436790963961856.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1218683105334457920389120.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 237  Train Acc: 0.0963  Train loss: 1208385158516195696050176.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1249997408825630699552768.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 238  Train Acc: 0.0975  Train loss: 1238188577888777806020608.0000  Cos: 1.000  L2: 10000.0010  Test Acc: 0.1010	Test loss: 1281968260069671443628032.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 239  Train Acc: 0.0956  Train loss: 1268497167112425749610496.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 1314528941574367635046400.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 240  Train Acc: 0.1069  Train loss: 1297198304175186956517376.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1347689494363686572130304.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 241  Train Acc: 0.1163  Train loss: 1296242162592410540965888.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1381501643453887942754304.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 242  Train Acc: 0.0981  Train loss: 1366309474001543285964800.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1415923783020758263922688.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 243  Train Acc: 0.1013  Train loss: 1414673703898620928983040.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1451000159194048297435136.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 244  Train Acc: 0.0931  Train loss: 1431142964933964171575296.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1486711817252469838184448.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 245  Train Acc: 0.1081  Train loss: 1455681827663097490309120.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1523033446072602536706048.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 246  Train Acc: 0.1056  Train loss: 1483871547481389560496128.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1560093588908220390309888.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 247  Train Acc: 0.1000  Train loss: 1535804399459006228201472.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 1597825119095268453646336.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 248  Train Acc: 0.0981  Train loss: 1567555123428995450798080.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 1636184903073248007159808.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 249  Train Acc: 0.1062  Train loss: 1605019081460349621239808.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 1675258065417945783205888.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 250  Train Acc: 0.0969  Train loss: 1651509335450016951566336.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 1715041806259487665815552.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 251  Train Acc: 0.1025  Train loss: 1676231450728851929300992.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1755524800219349619048448.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 252  Train Acc: 0.1094  Train loss: 1717599679437229338394624.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1796671623784302758592512.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 253  Train Acc: 0.1037  Train loss: 1787136170653546117595136.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 1838546555325824836304896.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 254  Train Acc: 0.1013  Train loss: 1812138388932501333606400.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1881165986620699586854912.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 255  Train Acc: 0.0938  Train loss: 1862907741350706332827648.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 1924569923583968458833920.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 256  Train Acc: 0.1069  Train loss: 1879601799741593855459328.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 1968672855180556273451008.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 257  Train Acc: 0.1019  Train loss: 1910112875848519980679168.0000  Cos: 1.000  L2: 9999.9980  Test Acc: 0.1010	Test loss: 2013563630729754646151168.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 258  Train Acc: 0.1056  Train loss: 1978384465897367334289408.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 2059226530953893276286976.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 259  Train Acc: 0.0963  Train loss: 2020767722374944958447616.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 2105587675144159313788928.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 260  Train Acc: 0.1000  Train loss: 2062857835589609386409984.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 2152787211516315047034880.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 261  Train Acc: 0.1075  Train loss: 2124510543632761396133888.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 2200709454543083062427648.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 262  Train Acc: 0.1069  Train loss: 2172347383999075444588544.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 2249489149734762852646912.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 263  Train Acc: 0.0931  Train loss: 2232013850403306049896448.0000  Cos: 1.000  L2: 9999.9980  Test Acc: 0.1010	Test loss: 2299101343027724696944640.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 264  Train Acc: 0.1075  Train loss: 2233281382393533918347264.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 2349492398323023367634944.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 265  Train Acc: 0.0990  Train loss: 5883776350256342079897600.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 2400679838182854340116480.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 266  Train Acc: 0.1125  Train loss: 2352176418320722406932480.0000  Cos: 1.000  L2: 9999.9990  Test Acc: 0.1010	Test loss: 2452736920738418739118080.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 267  Train Acc: 0.1144  Train loss: 2394957891003687700004864.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 2505624700301290376265728.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 268  Train Acc: 0.0963  Train loss: 2475535404904738348597248.0000  Cos: 1.000  L2: 10000.0000  Test Acc: 0.1010	Test loss: 2559351208122670628470784.0000
+FLDetector Defense: Benign idx: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19]
+Epoch 269  Train Acc: 0.1050  Train loss: 2502066474921003407376384.0000  Cos: nan  L2: 0.0000  Test Acc: 0.1010	Test loss: 2559351208122670628470784.0000

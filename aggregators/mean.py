@@ -6,6 +6,7 @@
 """
 from aggregators.aggregatorbase import AggregatorBase
 import numpy as np
+import torch
 from aggregators import aggregator_registry
 
 
@@ -49,6 +50,8 @@ class Mean(AggregatorBase):
             时间复杂度 O(n * d)，空间复杂度 O(d)。
         """
         # 直接沿客户端维度取平均，得到全局更新。
+        if torch.is_tensor(updates):
+            return torch.mean(updates, dim=0)
         return np.mean(updates, axis=0)
 
 

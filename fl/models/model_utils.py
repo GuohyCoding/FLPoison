@@ -7,15 +7,21 @@ import torch
 # ======The two main APIs for model and 1-d numpy array conversion======
 
 
+def _to_tensor(vector, device, dtype):
+    if torch.is_tensor(vector):
+        return vector.to(device=device, dtype=dtype)
+    return torch.from_numpy(vector).to(device=device, dtype=dtype)
+
+
 def vec2model(vector, model, plus=False, ignorebn=False):
-    """将 1D numpy 向量写回模型参数（原地修改）。
+    """将 1D 向量写回模型参数（原地修改）。
 
     概述:
         遍历模型 state_dict，按顺序从输入向量切片并 reshape，赋值给每一层参数。
         可选择忽略 BatchNorm 统计参数，并支持增量式更新（plus=True）。
 
     参数:
-        vector (np.ndarray): 展平的模型参数向量。
+        vector (np.ndarray | torch.Tensor): 展平的模型参数向量。
         model (torch.nn.Module): 目标模型实例。
         plus (bool): 若为 True，则执行 in-place 加法，否则执行赋值。
         ignorebn (bool): 是否忽略 BatchNorm 的 running_mean / running_var 等统计量。
@@ -46,13 +52,13 @@ def vec2model(vector, model, plus=False, ignorebn=False):
     model_state_dict = model.state_dict()
     device = next(model.parameters()).device
     dtype = next(model.parameters()).dtype
+    vec_tensor = _to_tensor(vector, device, dtype)
 
     for key, value in model_state_dict.items():
         if ignorebn and any(substring in key for substring in ['running_mean', 'running_var', 'num_batches_tracked']):
             continue
         numel = value.numel()
-        param_tensor = torch.from_numpy(
-            vector[curr_idx:curr_idx + numel].reshape(value.shape)).to(device=device, dtype=dtype)
+        param_tensor = vec_tensor[curr_idx:curr_idx + numel].view(value.shape)
 
         if plus:
             value.copy_(value + param_tensor)  # in-place addition
@@ -78,6 +84,11 @@ def model2vec(model):
         (B) 类比仓库点货：把每个箱子里的货物依次拿出来排好。
     """
     return state2vec(model.state_dict())
+
+
+def model2vec_torch(model, ignorebn=False):
+    """将模型参数转换为 1D torch 向量（保留设备与 dtype）。"""
+    return state2vec_torch(model.state_dict(), ignorebn=ignorebn)
     # return parameter2vector(model)
 
 
@@ -99,6 +110,13 @@ def add_vec2model(vector, model_template):
     vec2model(vector, tmp_model, plus=True)
     return tmp_model
 
+
+def add_vec2model_torch(vector, model_template):
+    """将 torch 向量加到模型副本上，返回更新后的新模型。"""
+    tmp_model = deepcopy(model_template)
+    vec2model(vector, tmp_model, plus=True)
+    return tmp_model
+
 # ======Below are specific implementations======
 
 
@@ -110,8 +128,11 @@ def vector2parameter(vector, model):
     current_pos = 0
     for param in model.parameters():
         numel = param.numel()  # get the number of elements in param
-        param.data = torch.from_numpy(
-            vector[current_pos:current_pos + numel].reshape(param.shape)).to(param.device)
+        param.data = _to_tensor(
+            vector[current_pos:current_pos + numel].reshape(param.shape),
+            param.device,
+            param.dtype,
+        )
         current_pos += numel
 
 
@@ -119,6 +140,13 @@ def parameter2vector(model):
     """将模型参数转为 1D numpy 向量（不包含 BN 统计量）。"""
     model_parameters = model.parameters()
     return np.concatenate([param.detach().cpu().numpy().flatten() for param in model_parameters])
+
+
+def parameter2vector_torch(model):
+    """将模型参数转为 1D torch 向量（不包含 BN 统计量）。"""
+    model_parameters = model.parameters()
+    flats = [param.detach().reshape(-1) for param in model_parameters]
+    return torch.cat(flats, dim=0) if flats else torch.tensor([], device=next(model.parameters()).device)
 
 
 def set_grad_none(model):
@@ -138,8 +166,11 @@ def vector2gradient(vector, model):
     parameters = model.parameters()
     for param in parameters:
         numel = param.numel()  # get the number of elements in param
-        param.grad = torch.from_numpy(
-            vector[current_pos:current_pos + numel].reshape(param.shape)).to(param.device)
+        param.grad = _to_tensor(
+            vector[current_pos:current_pos + numel].reshape(param.shape),
+            param.device,
+            param.dtype,
+        )
         current_pos += numel
 
 
@@ -147,6 +178,15 @@ def gradient2vector(model):
     """将模型梯度展平成 1D numpy 向量。"""
     parameters = model.parameters()
     return np.concatenate([param.grad.cpu().numpy().flatten() for param in parameters])
+
+
+def gradient2vector_torch(model):
+    """将模型梯度展平成 1D torch 向量。"""
+    parameters = model.parameters()
+    flats = [param.grad.reshape(-1) for param in parameters if param.grad is not None]
+    if not flats:
+        return torch.tensor([], device=next(model.parameters()).device)
+    return torch.cat(flats, dim=0)
 
 
 def ol_from_vector(vector, model_template, flatten=True, return_type='dict'):
@@ -225,13 +265,13 @@ def vec2state(vector, model, plus=False, ignorebn=False, numpy=False):
     model_state_dict = deepcopy(model.state_dict())
     device = next(model.parameters()).device
     dtype = next(model.parameters()).dtype
+    vec_tensor = _to_tensor(vector, device, dtype)
 
     for key, value in model_state_dict.items():
         if ignorebn and any(substring in key for substring in ['running_mean', 'running_var', 'num_batches_tracked']):
             continue
         numel = value.numel()
-        param_tensor = torch.from_numpy(
-            vector[curr_idx:curr_idx + numel].reshape(value.shape)).to(device=device, dtype=dtype)
+        param_tensor = vec_tensor[curr_idx:curr_idx + numel].view(value.shape)
 
         if plus:
             value.copy_(value + param_tensor)  # in-place addition
@@ -281,6 +321,21 @@ def state2vec(model_state_dict, ignorebn=False, numpy_flg=False):
         ]
 
     return np.concatenate(arrays)
+
+
+def state2vec_torch(model_state_dict, ignorebn=False):
+    """将 state_dict 转为拼接的 1D torch 向量。"""
+    tensors = []
+    for name, value in model_state_dict.items():
+        if ignorebn and any(substring in name for substring in ['running_mean', 'running_var', 'num_batches_tracked']):
+            continue
+        if torch.is_tensor(value):
+            tensors.append(value.detach().reshape(-1))
+        else:
+            tensors.append(torch.as_tensor(value).reshape(-1))
+    if not tensors:
+        return torch.tensor([])
+    return torch.cat(tensors, dim=0)
 
 
 # __AI_ANNOTATION_SUMMARY__

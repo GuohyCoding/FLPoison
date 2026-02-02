@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import torch
 from copy import deepcopy
 
 from global_utils import actor
@@ -103,8 +104,16 @@ class FangAttack(MPBase, Client):
             (F) 背景参考: Krum 聚合算法原理、Byzantine 鲁棒聚合相关文献。
         """
         # 使用已获取的 update 与各类联邦算法兼容，不直接依赖权重或梯度。
-        before_attack_update = np.array(
-            [c.update for c in clients if c.category == "attacker"])
+        before_attack_update = np.stack(
+            [
+                c.update.detach().cpu().numpy()
+                if torch.is_tensor(c.update)
+                else np.asarray(c.update)
+                for c in clients
+                if c.category == "attacker"
+            ],
+            axis=0,
+        )
         attacker_updates = np.zeros(
             (self.args.num_adv, len(self.update)), dtype=np.float32)
         # 估计攻击方向：以攻击者提交的平均更新为参考，取符号方向。
@@ -204,4 +213,4 @@ class FangAttack(MPBase, Client):
 # 类 FangAttack: 针对 Krum 聚合的 Fang 模型投毒攻击实现。
 # 方法 __init__: 初始化攻击参数与客户端上下文，记录假定聚合算法。
 # 方法 omniscient: 通过模拟 Krum 选择构造恶意更新并生成支持者向量。
-# 方法 sample_vectors: 在 ε 球内为支持者采样近邻恶意向量（备用）。*** End Patch*** End Patch{"code":400,"stdout":"","stderr":"","error":"Invalid JSON: Expecting value: line 1 column 1 (char 0)"} ***!
+# 方法 sample_vectors: 在 ε 球内为支持者采样近邻恶意向量（备用）。

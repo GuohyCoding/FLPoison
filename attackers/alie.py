@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import torch
 from scipy.stats import norm
 from fl.client import Client
 from attackers.pbases.mpbase import MPBase
@@ -119,6 +120,23 @@ class ALIE(MPBase, Client):
         # 收集所有良性客户端的更新向量，以作为统计量基础。
         benign_updates = [i.update for i in clients if i.category == "benign"]
         # 估计良性更新的均值与标准差，反映平均梯度及其波动。
+        if benign_updates and any(torch.is_tensor(update) for update in benign_updates):
+            device = self.args.device
+            benign_updates_tensor = torch.stack(
+                [
+                    update.detach().to(device)
+                    if torch.is_tensor(update)
+                    else torch.as_tensor(update, device=device)
+                    for update in benign_updates
+                ],
+                dim=0,
+            )
+            mean = benign_updates_tensor.mean(dim=0)
+            std = benign_updates_tensor.std(dim=0, unbiased=False)
+            # 根据 ALIE 攻击公式生成对抗性更新向量。
+            attack_vec = mean + float(z_max) * std
+            # repeat attack vector for all attackers
+            return attack_vec.unsqueeze(0).repeat(self.args.num_adv, 1)
         mean = np.mean(benign_updates, axis=0)
         std = np.std(benign_updates, axis=0)
         # 根据 ALIE 攻击公式生成对抗性更新向量。

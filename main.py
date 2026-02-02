@@ -11,6 +11,8 @@ import gc
 import logging
 import time
 import numpy as np
+import torch
+
 from fl import coordinator
 from global_args import benchmark_preprocess, read_args, override_args, single_preprocess
 from global_utils import avg_value, print_filtered_args, setup_logger, setup_seed
@@ -83,7 +85,7 @@ def fl_run(args):
     args.logger.info("Starting Training...")
     prev_aggregated_update = None
     for global_epoch in range(args.epochs):
-        epoch_msg = f"Epoch {global_epoch:<3}\t"
+        epoch_msg = f"Epoch {global_epoch:<3}"
         # print(f"Global epoch {global_epoch} begin")
         # server dispatches numpy version global weights 1d vector to clients
         global_weights_vec = the_server.global_weights_vec
@@ -104,7 +106,7 @@ def fl_run(args):
 
         avg_train_loss = avg_value(avg_train_loss)
         avg_train_acc = avg_value(avg_train_acc)
-        epoch_msg += f"\tTrain Acc: {avg_train_acc:.4f}\tTrain loss: {avg_train_loss:.4f}\t"
+        epoch_msg += f"  Train Acc: {avg_train_acc:.4f}  Train loss: {avg_train_loss:.4f}  "
 
         # perform post-training attacks, for omniscient model poisoning attack, pass all clients
         omniscient_attack(clients)
@@ -115,17 +117,25 @@ def fl_run(args):
 
         # XXX：测试当前轮和上一轮的方向；
         cos_similarity = float("nan")
-        current_update = np.asarray(
-            the_server.aggregated_update) if the_server.aggregated_update is not None else None
+        global_update_l2 = float("nan")
+        if the_server.aggregated_update is None:
+            current_update = None
+        elif torch.is_tensor(the_server.aggregated_update):
+            current_update = the_server.aggregated_update.detach().cpu().numpy()
+        else:
+            current_update = np.asarray(the_server.aggregated_update)
         if prev_aggregated_update is not None and current_update is not None:
             prev_norm = np.linalg.norm(prev_aggregated_update)
             curr_norm = np.linalg.norm(current_update)
             if prev_norm > 0 and curr_norm > 0:
                 cos_similarity = float(
                     np.dot(prev_aggregated_update, current_update) / (prev_norm * curr_norm))
+            global_update_l2 = float(curr_norm)
+        elif current_update is not None:
+            global_update_l2 = float(np.linalg.norm(current_update))
         prev_aggregated_update = np.copy(
             current_update) if current_update is not None else None
-        epoch_msg += f"Cos: {cos_similarity:.3f}	"
+        epoch_msg += f"Cos: {cos_similarity:.3f}  L2: {global_update_l2:.4f}  "
 
         # 服务器端执行指定聚合规则（如 FedAvg、Robust Aggregator）来融合更新。
         the_server.update_global()  # push the aggregated model back to the global buffer
@@ -146,12 +156,12 @@ def fl_run(args):
 
 
     # XXX：输出各客户端本地更新方向的平均余弦相似度（已去除首轮）
-    for client in clients:
-        num = len(client.local_cos_history)
-        avg_cos = sum(client.local_cos_history[1:]) / (num - 1) if num > 1 else float("nan")
-        print(
-            f"Client {client.worker_id} local cos avg: {avg_cos:.6f}"
-        )
+    # for client in clients:
+    #     num = len(client.local_cos_history)
+    #     avg_cos = sum(client.local_cos_history[1:]) / (num - 1) if num > 1 else float("nan")
+    #     print(
+    #         f"Client {client.worker_id} local cos avg: {avg_cos:.6f}"
+    #     )
 
     if args.record_time:
         # 可选：记录每个客户端与服务器端在通信/训练阶段的耗时，便于性能评估。

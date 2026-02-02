@@ -7,6 +7,7 @@ DnC 聚合器：通过子采样与奇异值投影识别并过滤潜在恶意客�
 from aggregators.aggregator_utils import prepare_grad_updates, wrapup_aggregated_grads
 from aggregators.aggregatorbase import AggregatorBase
 import numpy as np
+import torch
 from aggregators import aggregator_registry
 
 
@@ -94,14 +95,14 @@ class DnC(AggregatorBase):
             sampled_grads = gradient_updates[:, param_idx]
 
             # 2. 计算均值并进行中心化，消除整体偏移影响。
-            mu = np.mean(sampled_grads, axis=0)
+            mu = torch.mean(sampled_grads, dim=0)
             centered_grads = sampled_grads - mu
 
             # 3. 通过奇异值分解获取主奇异向量，用于度量异常方向的投影强度。
-            _, _, V = np.linalg.svd(centered_grads, full_matrices=False)
-            v = V[0, :]
+            _, _, Vh = torch.linalg.svd(centered_grads, full_matrices=False)
+            v = Vh[0, :]
             # 根据投影长度平方作为异常得分，越大越可能来自恶意客户端。
-            score = np.dot(centered_grads, v)**2
+            score = torch.matmul(centered_grads, v)**2
 
             # 计算需保留的客户端数量，默认剔除 fliter_frac * num_adv 个客户端。
             k = int(self.args.num_clients - self.fliter_frac * self.args.num_adv)
@@ -109,8 +110,9 @@ class DnC(AggregatorBase):
                 raise ValueError("过滤数量过大，导致没有客户端被保留。")
 
             # 取得分最小的 k 个索引作为当前迭代的候选良性客户端。
-            dnc_idx = np.argpartition(score, k, axis=0)[:k] if k != len(
-                score) else np.arange(len(score))
+            score_np = score.detach().cpu().numpy()
+            dnc_idx = np.argpartition(score_np, k, axis=0)[:k] if k != len(
+                score_np) else np.arange(len(score_np))
             # 与历史良性集合取交集，保证多轮一致认为可靠。
             benign_idx = benign_idx.intersection(set(dnc_idx))
 

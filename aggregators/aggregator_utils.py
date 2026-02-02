@@ -7,7 +7,29 @@
 from collections import defaultdict
 from copy import deepcopy
 import numpy as np
-from fl.models.model_utils import add_vec2model, model2vec, vec2model
+import torch
+from fl.models.model_utils import (
+    add_vec2model,
+    add_vec2model_torch,
+    model2vec,
+    model2vec_torch,
+    vec2model,
+)
+
+
+def _ensure_tensor(updates, device=None):
+    if torch.is_tensor(updates):
+        return updates.to(device=device) if device is not None else updates
+    if isinstance(updates, np.ndarray):
+        return torch.as_tensor(updates, device=device)
+    if isinstance(updates, (list, tuple)):
+        if not updates:
+            return torch.empty((0, 0), device=device)
+        if torch.is_tensor(updates[0]):
+            stacked = torch.stack([u.to(device=device) if device is not None else u for u in updates], dim=0)
+            return stacked
+        return torch.as_tensor(updates, device=device)
+    return torch.as_tensor(updates, device=device)
 
 
 def L2_distances(updates):
@@ -28,12 +50,14 @@ def L2_distances(updates):
     """
     # 使用默认字典嵌套结构存储距离矩阵，以便按需访问并自动初始化子字典。
     distances = defaultdict(dict)
+    updates_tensor = _ensure_tensor(updates)
     # 双重循环遍历所有无序对，仅计算上三角避免重复运算。
     for i in range(len(updates)):
         for j in range(i):
             # 通过 numpy.norm 计算两个向量的 L2 距离，并对称赋值节约计算。
-            distances[i][j] = distances[j][i] = np.linalg.norm(
-                updates[i] - updates[j])
+            distances[i][j] = distances[j][i] = float(
+                torch.norm(updates_tensor[i] - updates_tensor[j]).item()
+            )
     return distances
 
 
@@ -128,9 +152,12 @@ def prepare_grad_updates(algorithm, updates, global_model):
 
     num_updates = len(updates)  # equal to num_clients
     # gradient_updates
-    # 注意：以下 if 条件存在潜在逻辑问题，"FedSGD" or "FedOpt" in algorithm 始终为真，应在后续重构中修正。
-    gradient_updates = updates if "FedSGD" or "FedOpt" in algorithm else np.array(
-            [updates[cid] - model2vec(global_model) for cid in range(num_updates)])
+    if algorithm == "FedAvg":
+        global_vec = model2vec_torch(global_model)
+        updates_tensor = _ensure_tensor(updates, device=global_vec.device)
+        gradient_updates = updates_tensor - global_vec
+    else:
+        gradient_updates = _ensure_tensor(updates)
     
     return gradient_updates
    
@@ -160,15 +187,15 @@ def prepare_updates(algorithm, updates, global_model, vector_form=True):
     # gradient_updates
     if algorithm == 'FedAvg':
         # FedAvg 场景中的 updates 即模型参数向量，需转换为梯度形式。
-        vec_updates = updates
-        gradient_updates = np.array(
-            [updates[cid] - model2vec(global_model) for cid in range(num_updates)])
+        global_vec = model2vec_torch(global_model)
+        vec_updates = _ensure_tensor(updates, device=global_vec.device)
+        gradient_updates = vec_updates - global_vec
 
-    elif "FedSGD" or "FedOpt" in algorithm:
+    elif "FedSGD" in algorithm or "FedOpt" in algorithm:
         # FedSGD/FedOpt 场景：updates 表示梯度，需还原对应模型参数。
-        gradient_updates = updates
-        vec_updates = np.array(
-            [model2vec(global_model) + updates[cid] for cid in range(num_updates)])
+        gradient_updates = _ensure_tensor(updates)
+        global_vec = model2vec_torch(global_model)
+        vec_updates = global_vec + gradient_updates
 
     if vector_form:
         # vector_form return 1d np array vector model parameters
@@ -181,7 +208,7 @@ def prepare_updates(algorithm, updates, global_model, vector_form=True):
             tmp = deepcopy(global_model)
             vec2model(vec_updates[cid], tmp)
             model_updates.append(tmp)
-        model_updates = np.array(model_updates)
+        model_updates = model_updates
 
     return model_updates, gradient_updates
 
@@ -206,13 +233,18 @@ def wrapup_aggregated_grads(benign_grad_updates, algorithm, global_model, aggreg
         时间复杂度 O(n * d)；空间复杂度 O(d)。
     """
     # 若 aggregated=False，则对良性更新求均值，获得聚合梯度。
-    aggregated_gradient = benign_grad_updates if aggregated else np.mean(
-        benign_grad_updates, axis=0)
+    if torch.is_tensor(benign_grad_updates):
+        aggregated_gradient = benign_grad_updates if aggregated else torch.mean(
+            benign_grad_updates, dim=0
+        )
+    else:
+        aggregated_gradient = benign_grad_updates if aggregated else np.mean(
+            benign_grad_updates, axis=0)
     if algorithm == 'FedAvg':
         # 对于 FedAvg，需要把聚合梯度叠加到全局模型参数上，输出新的模型向量。
-        aggregated_model = add_vec2model(
+        aggregated_model = add_vec2model_torch(
             aggregated_gradient, global_model)
-        return model2vec(aggregated_model)
+        return model2vec_torch(aggregated_model)
     else:
         # 对于基于梯度更新的算法，直接返回聚合梯度即可。
         return aggregated_gradient
@@ -240,6 +272,13 @@ def normclipping(vectors, threshold, epsilon=1e-6):
     if len(vectors.shape) != 2:
         raise ValueError(
             "The input should be 2d vectors, or you need to extend this function")
+    if torch.is_tensor(vectors):
+        norms = torch.linalg.norm(vectors, dim=1)
+        scales = torch.minimum(
+            torch.ones_like(norms),
+            threshold / (norms + epsilon),
+        ).reshape(-1, 1)
+        return vectors * scales
     # 计算每行的范数并按需缩放，最小值操作确保范数不超过阈值。
     return vectors * np.minimum(1, threshold / (np.linalg.norm(vectors, axis=1)+epsilon)).reshape(-1, 1)
 
@@ -263,6 +302,15 @@ def addnoise(vector, noise_mean, noise_std):
         时间复杂度 O(d)；空间复杂度 O(d)，d 为向量维度。
     """
     # generate gaussian noise, note that the noise should be float32 to be consistent with the future torch dtype
+    if torch.is_tensor(vector):
+        noise = torch.normal(
+            mean=float(noise_mean),
+            std=float(noise_std),
+            size=vector.shape,
+            device=vector.device,
+            dtype=vector.dtype,
+        )
+        return vector + noise
     noise = np.random.normal(noise_mean, noise_std,
                              vector.shape).astype(np.float32)
     return vector + noise

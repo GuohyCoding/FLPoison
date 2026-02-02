@@ -8,6 +8,7 @@ Multi-Krum 聚合器：在 Krum 的基础上选取多个最可信客户端再求
 from aggregators.aggregatorbase import AggregatorBase
 from aggregators.aggregator_utils import L2_distances, krum_compute_scores
 import numpy as np
+import torch
 from aggregators import aggregator_registry
 
 
@@ -116,6 +117,8 @@ def multi_krum(updates, num_byzantine, avg_percentage, enable_check=False):
     selected_indices = [sorted_scores[idx][0] for idx in range(m_avg)]
 
     # 对选出的客户端更新取均值。
+    if torch.is_tensor(updates):
+        return torch.mean(updates[selected_indices], dim=0)
     return np.mean(updates[selected_indices], axis=0)
 
 

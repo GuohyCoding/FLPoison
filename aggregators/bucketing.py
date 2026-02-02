@@ -9,6 +9,7 @@ import math
 import random
 from aggregators.aggregatorbase import AggregatorBase
 import numpy as np
+import torch
 from aggregators import aggregator_registry
 
 
@@ -71,17 +72,30 @@ class Bucketing(AggregatorBase):
         复杂度:
             时间复杂度 O(n * d)，n 为客户端数量、d 为参数维度；空间复杂度 O(n * d)。
         """
-        # 在原地打乱客户端更新顺序，降低恶意客户端集中于同一桶的概率。
-        random.shuffle(updates)
-        # 根据桶大小计算需要的桶数量，向上取整以覆盖所有客户端。
-        num_buckets = math.ceil(
-            len(updates) / self.bucket_size)
-        # 按照 bucket_size 切片构造桶列表，最后一个桶可能人数不足。
-        buckets = [updates[i:i + self.bucket_size]
-                   for i in range(0, len(updates), self.bucket_size)]
-        # 对每个桶求平均，得到桶级代表向量（也可替换为更鲁棒的统计方式）。
-        bucket_avg_updates = np.array(
-            [np.mean(buckets[bucket_id], axis=0) for bucket_id in range(num_buckets)])
+        if torch.is_tensor(updates):
+            perm = torch.randperm(len(updates), device=updates.device)
+            updates_shuffled = updates[perm]
+            num_buckets = math.ceil(
+                len(updates_shuffled) / self.bucket_size)
+            buckets = [
+                updates_shuffled[i:i + self.bucket_size]
+                for i in range(0, len(updates_shuffled), self.bucket_size)
+            ]
+            bucket_avg_updates = torch.stack(
+                [bucket.mean(dim=0) for bucket in buckets], dim=0
+            )
+        else:
+            # 在原地打乱客户端更新顺序，降低恶意客户端集中于同一桶的概率。
+            random.shuffle(updates)
+            # 根据桶大小计算需要的桶数量，向上取整以覆盖所有客户端。
+            num_buckets = math.ceil(
+                len(updates) / self.bucket_size)
+            # 按照 bucket_size 切片构造桶列表，最后一个桶可能人数不足。
+            buckets = [updates[i:i + self.bucket_size]
+                       for i in range(0, len(updates), self.bucket_size)]
+            # 对每个桶求平均，得到桶级代表向量（也可替换为更鲁棒的统计方式）。
+            bucket_avg_updates = np.array(
+                [np.mean(buckets[bucket_id], axis=0) for bucket_id in range(num_buckets)])
 
         # 调用基础聚合器对桶级结果再次聚合，输出最终全局更新。
         return self.a_aggregator.aggregate(bucket_avg_updates)

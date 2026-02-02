@@ -7,6 +7,7 @@
 """
 from aggregators.aggregatorbase import AggregatorBase
 import numpy as np
+import torch
 from aggregators import aggregator_registry
 
 
@@ -83,6 +84,11 @@ def trimmed_mean(updates, filter_frac):
         raise ValueError(
             f"filter_frac={filter_frac} 剔除过多客户端，需满足 2 * floor(beta * n) < n。"
         )
+
+    if torch.is_tensor(updates):
+        sorted_vals, _ = torch.sort(updates, dim=0)
+        trimmed = sorted_vals[num_excluded: num_clients - num_excluded]
+        return torch.mean(trimmed, dim=0)
 
     # 使用 np.partition 找到每个坐标的前 num_excluded 个最小值与最大值。
     smallest_excluded = np.partition(

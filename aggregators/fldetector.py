@@ -11,6 +11,7 @@ FLDetector 聚合器：基于历史梯度拟合与聚类实现的后门检测防
 from copy import deepcopy
 from sklearn.cluster import KMeans
 import numpy as np
+import torch
 from aggregators.aggregatorbase import AggregatorBase
 from aggregators import aggregator_registry
 from aggregators.aggregator_utils import prepare_updates, wrapup_aggregated_grads
@@ -89,6 +90,8 @@ class FLDetector(AggregatorBase):
         # 将更新转换为梯度形式，便于后续误差度量；vector_form=False 返回模型对象列表。
         _, gradient_updates = prepare_updates(
             self.args.algorithm, updates, self.global_model, vector_form=False)
+        if torch.is_tensor(gradient_updates):
+            gradient_updates = gradient_updates.detach().cpu().numpy()
         benign_idx = np.arange(len(gradient_updates))
 
         # 当历史记录充足时，利用 LBFGS 预测梯度并计算每个客户端的偏差得分。

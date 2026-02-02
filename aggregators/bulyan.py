@@ -8,6 +8,7 @@ Bulyan 聚合器：通过两阶段筛选实现拜占庭鲁棒的坐标级聚合�
 from aggregators.aggregatorbase import AggregatorBase
 from aggregators.krum import krum
 import numpy as np
+import torch
 from aggregators import aggregator_registry
 
 
@@ -79,24 +80,44 @@ class Bulyan(AggregatorBase):
         # 1. 利用 Krum 迭代选择候选集合
         set_size = self.args.num_clients - 2 * self.args.num_adv
         selected_idx = []
-        while len(selected_idx) < set_size:
-            try:
-                # 从剩余更新中执行 Krum，取得最可信客户端索引。
-                krum_idx = krum(np.delete(
-                    updates, selected_idx, axis=0), self.args.num_adv, return_index=True)
-            except ValueError:
-                # 若 Krum 条件不再满足，则在已有候选基础上停止；若无候选则继续抛出异常。
-                if len(selected_idx) > 0:
-                    break
-                else:
+        if torch.is_tensor(updates):
+            available = torch.arange(len(updates), device=updates.device)
+            while len(selected_idx) < set_size:
+                try:
+                    remaining = updates[available]
+                    krum_idx = krum(
+                        remaining, self.args.num_adv, return_index=True
+                    )
+                except ValueError:
+                    if len(selected_idx) > 0:
+                        break
                     raise
-            except Exception as e:
-                # 将其他异常直接上抛，便于调用方定位问题。
-                raise e
-            # 将选中的索引加入候选集合，准备下一轮挑选。
-            selected_idx.append(krum_idx)
-        # 将候选索引转换为 NumPy 数组，便于后续索引操作。
-        selected_idx = np.array(selected_idx, dtype=np.int64)
+                except Exception as e:
+                    raise e
+                chosen = int(available[krum_idx].item())
+                selected_idx.append(chosen)
+                mask = available != chosen
+                available = available[mask]
+            selected_idx = torch.as_tensor(selected_idx, device=updates.device, dtype=torch.long)
+        else:
+            while len(selected_idx) < set_size:
+                try:
+                    # 从剩余更新中执行 Krum，取得最可信客户端索引。
+                    krum_idx = krum(np.delete(
+                        updates, selected_idx, axis=0), self.args.num_adv, return_index=True)
+                except ValueError:
+                    # 若 Krum 条件不再满足，则在已有候选基础上停止；若无候选则继续抛出异常。
+                    if len(selected_idx) > 0:
+                        break
+                    else:
+                        raise
+                except Exception as e:
+                    # 将其他异常直接上抛，便于调用方定位问题。
+                    raise e
+                # 将选中的索引加入候选集合，准备下一轮挑选。
+                selected_idx.append(krum_idx)
+            # 将候选索引转换为 NumPy 数组，便于后续索引操作。
+            selected_idx = np.array(selected_idx, dtype=np.int64)
 
         # 若 beta 等于客户端总数或候选数量，直接使用候选集合。
         if self.beta == self.args.num_clients or self.beta == len(selected_idx):
@@ -104,15 +125,26 @@ class Bulyan(AggregatorBase):
         else:
             # 2. 在候选集合上执行坐标级 beta-closest-median 筛选
             # notes: 若改用其他坐标级聚合方式（如 trimmed mean）可在此替换。
-            median = np.median(updates[selected_idx], axis=0)
-            abs_dist = np.abs(updates[selected_idx] - median)
-
-            # 对每个坐标选取与中位数距离最小的 beta 个元素。
-            beta_idx = np.argpartition(
-                abs_dist, self.beta, axis=0)[:self.beta]
-            bening_updates = np.take_along_axis(
-                updates[selected_idx], beta_idx, axis=0)
+            if torch.is_tensor(updates):
+                median = torch.median(updates[selected_idx], dim=0).values
+                abs_dist = torch.abs(updates[selected_idx] - median)
+                _, beta_idx = torch.topk(
+                    abs_dist, self.beta, dim=0, largest=False
+                )
+                bening_updates = torch.gather(
+                    updates[selected_idx], dim=0, index=beta_idx
+                )
+            else:
+                median = np.median(updates[selected_idx], axis=0)
+                abs_dist = np.abs(updates[selected_idx] - median)
+                # 对每个坐标选取与中位数距离最小的 beta 个元素。
+                beta_idx = np.argpartition(
+                    abs_dist, self.beta, axis=0)[:self.beta]
+                bening_updates = np.take_along_axis(
+                    updates[selected_idx], beta_idx, axis=0)
         # 对筛选后的更新取均值，得到最终聚合结果。
+        if torch.is_tensor(bening_updates):
+            return torch.mean(bening_updates, dim=0)
         return np.mean(bening_updates, axis=0)
 
 

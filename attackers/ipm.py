@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
+import torch
 
 from global_utils import actor
 from attackers.pbases.mpbase import MPBase
@@ -101,16 +101,24 @@ class IPM(MPBase, Client):
         """
         if self.attack_start_epoch is not None and self.global_epoch <= 2 + self.attack_start_epoch:
             return None
-        mean = np.mean(
-            [i.update for i in clients if i.category == "benign"],
-            axis=0,
+        device = self.args.device
+        benign_updates = torch.stack(
+            [
+                i.update.detach().to(device)
+                if torch.is_tensor(i.update)
+                else torch.as_tensor(i.update, device=device)
+                for i in clients
+                if i.category == "benign"
+            ],
+            dim=0,
         )
-        attack_vec = - self.scaling_factor * mean
+        mean = benign_updates.mean(dim=0)
+        attack_vec = -float(self.scaling_factor) * mean
         # repeat attack vector for all attackers
-        return np.tile(attack_vec, (self.args.num_adv, 1))
+        return attack_vec.unsqueeze(0).repeat(self.args.num_adv, 1)
 
 
 # __AI_ANNOTATION_SUMMARY__
 # 类 IPM: 通过内积操控构造缩放负梯度的模型投毒攻击器。
 # 方法 __init__: 初始化默认缩放因子与攻击起始轮次。
-# 方法 omniscient: 生成缩放负均值梯度，为所有攻击者复制提交。*** End Patch*** End Patch{"code":400,"stdout":"","stderr":"","error":"Invalid JSON: Expecting value: line 1 column 1 (char 0)"} !***!
+# 方法 omniscient: 生成缩放负均值梯度，为所有攻击者复制提交。

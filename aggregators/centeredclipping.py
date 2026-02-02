@@ -8,6 +8,7 @@ Centered Clipping 聚合器：面向带动量更新的拜占庭鲁棒聚合策�
 from copy import deepcopy
 from aggregators.aggregatorbase import AggregatorBase
 import numpy as np
+import torch
 from aggregators import aggregator_registry
 
 
@@ -71,15 +72,24 @@ class CenteredClipping(AggregatorBase):
         """
         if self.momentum is None:
             # 当首次聚合时，用与更新相同形状的零向量初始化服务器动量。
-            self.momentum = np.zeros_like(updates[0], dtype=np.float32)
+            if torch.is_tensor(updates):
+                self.momentum = torch.zeros_like(updates[0])
+            else:
+                self.momentum = np.zeros_like(updates[0], dtype=np.float32)
 
         for _ in range(self.num_iters):
             # 逐轮执行中心裁剪：先将各客户端更新与历史动量之差进行裁剪，再求平均。
-            self.momentum = (
-                sum(self.clip(v - self.momentum)
-                    for v in updates) / len(updates)
-                + self.momentum
-            )
+            if torch.is_tensor(updates):
+                clipped = torch.stack(
+                    [self.clip(v - self.momentum) for v in updates], dim=0
+                )
+                self.momentum = clipped.mean(dim=0) + self.momentum
+            else:
+                self.momentum = (
+                    sum(self.clip(v - self.momentum)
+                        for v in updates) / len(updates)
+                    + self.momentum
+                )
 
         # 返回深拷贝，避免调用方意外修改内部状态。
         return deepcopy(self.momentum)
@@ -101,6 +111,13 @@ class CenteredClipping(AggregatorBase):
             时间复杂度 O(d)；空间复杂度 O(1)。
         """
         # 计算裁剪比例，当向量范数超过阈值时按比例缩放。
+        if torch.is_tensor(v):
+            norm = torch.norm(v, p=2)
+            scale = torch.clamp(
+                self.norm_threshold / (norm + 1e-12),
+                max=1.0,
+            )
+            return v * scale
         scale = min(1, self.norm_threshold / np.linalg.norm(v, ord=2))
         return v * scale
 

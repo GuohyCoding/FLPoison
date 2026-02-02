@@ -5,6 +5,7 @@
 近似求解几何中位数，比算术平均更能抵御极端值。
 """
 import numpy as np
+import torch
 from aggregators.aggregatorbase import AggregatorBase
 from aggregators import aggregator_registry
 
@@ -77,6 +78,15 @@ def smoothed_weiszfeld(updates, alphas, epsilon, num_iters):
     复杂度:
         时间复杂度 O(num_iters * n * d)；空间复杂度 O(d)。
     """
+    if torch.is_tensor(updates):
+        updates = updates.detach().cpu().numpy()
+    elif isinstance(updates, (list, tuple)) and updates:
+        if torch.is_tensor(updates[0]):
+            updates = np.stack([u.detach().cpu().numpy() for u in updates], axis=0)
+        else:
+            updates = np.asarray(updates)
+    else:
+        updates = np.asarray(updates)
     v = np.zeros_like(updates[0], dtype=np.float32)
     for _ in range(num_iters):
         denom = np.linalg.norm(updates - v, ord=2, axis=1)

@@ -4,6 +4,7 @@ MeanNorm 聚合器：在聚合前对每个客户端更新按范数裁剪，再�
 """
 from aggregators.aggregatorbase import AggregatorBase
 import numpy as np
+import torch
 from aggregators import aggregator_registry
 
 
@@ -26,6 +27,22 @@ class MeanNorm(AggregatorBase):
         返回:
             np.ndarray: 裁剪后求均值的全局更新。
         """
+        if torch.is_tensor(updates):
+            if updates.numel() == 0:
+                return updates
+            num_clients = updates.shape[0]
+            nfake = int(getattr(self.args, "num_adv", 0))
+            nfake = max(0, min(nfake, num_clients - 1))
+            norms = torch.linalg.norm(updates, dim=1, keepdim=True)
+            if nfake > 0:
+                sorted_norms, _ = torch.sort(norms.squeeze(-1))
+                benign_norm = sorted_norms[: num_clients - nfake].mean()
+            else:
+                benign_norm = norms.mean()
+            capped_norms = torch.minimum(norms, benign_norm)
+            clipped_updates = updates * capped_norms / (norms + self.eps)
+            return clipped_updates.mean(dim=0)
+
         updates = np.asarray(updates, dtype=np.float32)
         if updates.size == 0:
             return updates

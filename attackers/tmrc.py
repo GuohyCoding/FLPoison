@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import copy
-import numpy as np
 import torch
 from torch.nn.utils import prune
 
@@ -62,9 +61,13 @@ class TMRC(MPBase, Client):
         if not attackers:
             return None
 
-        current_global_vec = torch.from_numpy(
-            np.asarray(self.global_weights_vec, dtype=np.float32)
-        ).flatten()
+        device = self.args.device
+        if torch.is_tensor(self.global_weights_vec):
+            current_global_vec = self.global_weights_vec.detach().flatten().to(device)
+        else:
+            current_global_vec = torch.as_tensor(
+                self.global_weights_vec, dtype=torch.float32, device=device
+            ).flatten()
 
         if self.fixed_rand is None:
             # 首次调用时确定固定方向，并记录基线模型；方向固定可避免每轮随机方向导致扰动抵消
@@ -109,23 +112,33 @@ class TMRC(MPBase, Client):
 
         if history_vec is None or self.last_grad_vec is None:
             # 没有历史梯度或残差时，无法构造对齐扰动，先返回攻击者的 benign 均值，避免异常发散
-            benign_updates = np.stack(
-                [np.array(client.update, copy=True) for client in attackers], axis=0
-            ).astype(np.float32)
-            self.last_grad_vec = torch.from_numpy(
-                np.mean(benign_updates, axis=0)
-            ).float()
+            benign_updates = torch.stack(
+                [
+                    client.update.detach().to(device)
+                    if torch.is_tensor(client.update)
+                    else torch.as_tensor(client.update, device=device)
+                    for client in attackers
+                ],
+                dim=0,
+            )
+            self.last_grad_vec = benign_updates.mean(dim=0)
             if self.global_epoch % 50 == 0:
                 self.last_50_global_vec = current_global_vec.clone()
             return benign_updates
 
         benign_norm_value = 0.0
         if benign_clients:
-            benign_updates_np = np.stack(
-                [np.array(client.update, copy=True) for client in benign_clients], axis=0
-            ).astype(np.float32)
-            benign_mean = np.mean(benign_updates_np, axis=0)
-            benign_norm_value = float(np.linalg.norm(benign_mean))
+            benign_updates = torch.stack(
+                [
+                    client.update.detach().to(device)
+                    if torch.is_tensor(client.update)
+                    else torch.as_tensor(client.update, device=device)
+                    for client in benign_clients
+                ],
+                dim=0,
+            )
+            benign_mean = benign_updates.mean(dim=0)
+            benign_norm_value = float(torch.norm(benign_mean).item())
             if benign_norm_value > 0:
                 self._update_benign_anchor(benign_norm_value)
         active_dim = int(importance_mask.sum().item())
@@ -193,23 +206,28 @@ class TMRC(MPBase, Client):
 
         # 按残差方向生成恶意更新（仅在重要参数上放大），其余维度将被 benign 均值覆盖
         mal_update = lamda_succ * deviation
-        mal_update_np = mal_update.detach().cpu().numpy().astype(np.float32)
 
         # Merge: keep benign updates on non-important weights, only overwrite important ones
-        benign_attacker_updates = np.stack(
-            [np.array(client.update, copy=True) for client in attackers], axis=0
-        ).astype(np.float32)
-        benign_base = np.mean(benign_attacker_updates, axis=0)
-        combined_update = benign_base
+        benign_attacker_updates = torch.stack(
+            [
+                client.update.detach().to(device)
+                if torch.is_tensor(client.update)
+                else torch.as_tensor(client.update, device=device)
+                for client in attackers
+            ],
+            dim=0,
+        )
+        benign_base = benign_attacker_updates.mean(dim=0)
+        combined_update = benign_base.clone()
         # 只在重要索引处替换为恶意更新，其余保持 benign，减少被鲁棒聚合检测到的风险
-        important_idx = importance_mask.detach().cpu().numpy().astype(bool)
-        combined_update[important_idx] = mal_update_np[important_idx]
+        important_idx = importance_mask.bool()
+        combined_update[important_idx] = mal_update[important_idx]
 
         # 所有攻击者共享同一份恶意更新，形成协同攻击
-        malicious_updates = np.tile(combined_update, (len(attackers), 1))
+        malicious_updates = combined_update.unsqueeze(0).repeat(len(attackers), 1)
 
         self.current_scaling_factor = sf
-        self.last_grad_vec = torch.from_numpy(malicious_updates[0]).float()
+        self.last_grad_vec = malicious_updates[0].detach().clone()
         if current_epoch % 50 == 0:
             self.last_50_global_vec = current_global_vec.clone()
 
@@ -251,7 +269,7 @@ class TMRC(MPBase, Client):
         # Load current global weights to align masks with current model state
         from fl.models.model_utils import vec2model  # local import to avoid cycles
 
-        vec2model(weight_vec.detach().cpu().numpy(), tmp_model)
+        vec2model(weight_vec.detach(), tmp_model)
 
         # 使用 L1 非结构化剪枝得到“重要权重”集合：越大越不易被剪掉，从而保留 high-|w|
         # 这样每轮根据当前模型动态筛选，保证攻击集中在最敏感的参数上
@@ -294,7 +312,9 @@ class TMRC(MPBase, Client):
             self._anchor_samples = self._anchor_samples[-warmup:]
 
         if self.benign_norm_anchor is None and len(self._anchor_samples) >= warmup:
-            self.benign_norm_anchor = float(np.median(self._anchor_samples))
+            self.benign_norm_anchor = float(
+                torch.median(torch.tensor(self._anchor_samples)).item()
+            )
         elif self.benign_norm_anchor is not None and benign_norm_value < self.benign_norm_anchor:
             # allow anchor to decrease smoothly if benign updates shrink again
             self.benign_norm_anchor = 0.9 * self.benign_norm_anchor + 0.1 * benign_norm_value

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
+import torch
 
 from global_utils import actor
 from attackers.pbases.mpbase import MPBase
@@ -92,15 +92,21 @@ class Gaussian(MPBase, Client):
             (E) 边界条件与测试建议: 标准差需大于 0；可测试 1) 噪声形状与 update 相同；2) 多次调用均值接近 `noise_mean`。
             (F) 背景参考: 高斯噪声模型、Byzantine 鲁棒联邦学习理论。
         """
-        noise = np.random.normal(
-            loc=self.noise_mean,
-            scale=self.noise_std,
-            size=self.update.shape,
-        ).astype(np.float32)
+        device = self.args.device
+        if torch.is_tensor(self.update):
+            shape = self.update.shape
+        else:
+            shape = torch.as_tensor(self.update).shape
+        noise = torch.normal(
+            mean=float(self.noise_mean),
+            std=float(self.noise_std),
+            size=shape,
+            device=device,
+        )
         return noise
 
 
 # __AI_ANNOTATION_SUMMARY__
 # 类 Gaussian: 以高斯噪声取代本地更新的模型投毒攻击器。
 # 方法 __init__: 初始化噪声参数并合并外部配置。
-# 方法 non_omniscient: 采样高斯噪声作为提交更新。*** End Patch*** End Patch{"code":400,"stdout":"","stderr":"","error":"Invalid JSON: Expecting value: line 1 column 1 (char 0)"} ***!
+# 方法 non_omniscient: 采样高斯噪声作为提交更新。

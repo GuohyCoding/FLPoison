@@ -10,6 +10,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from aggregators.aggregator_utils import prepare_grad_updates, wrapup_aggregated_grads
 from aggregators.aggregatorbase import AggregatorBase
 import numpy as np
+import torch
 from datapreprocessor.data_utils import dataset_class_indices, subset_by_idx
 from fl.client import Client
 from aggregators import aggregator_registry
@@ -131,6 +132,11 @@ class FLTrust(AggregatorBase):
         root_grad_update.reshape(raw_shape)  # 注意：reshape 未赋值，保持与原实现一致
 
         # 3. 计算客户端梯度与锚梯度之间的余弦相似度作为信任得分。
+        # sklearn 仅接受 CPU numpy 数组，避免隐式转换触发 cuda -> numpy 报错。
+        if torch.is_tensor(gradient_updates):
+            gradient_updates = gradient_updates.detach().cpu().numpy()
+        if torch.is_tensor(root_grad_update):
+            root_grad_update = root_grad_update.detach().cpu().numpy()
         TS = cosine_similarity(
             gradient_updates, root_grad_update.reshape(1, -1))
 

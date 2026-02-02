@@ -46,7 +46,7 @@ def parse_logs(filename):
     """
     plt.clf()
     # read log file
-    with open(filename, 'r') as f:
+    with open(filename, 'r', encoding="utf-8", errors="replace") as f:
         content = f.read()
     epochs, accs, losses, asrs, asr_losses = [], [], [], [], []
     # regular expression pattern to extract epoch, test accuracy, test loss, asr, asr loss

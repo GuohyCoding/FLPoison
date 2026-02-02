@@ -6,6 +6,7 @@
 """
 from aggregators.aggregatorbase import AggregatorBase
 import numpy as np
+import torch
 from aggregators import aggregator_registry
 
 
@@ -46,6 +47,8 @@ class Median(AggregatorBase):
             时间复杂度 O(n * d); 空间复杂度 O(1)（numpy 原地操作除外）。
         """
         # 利用 numpy 对每个坐标求中位数，相比均值更能抑制异常值。
+        if torch.is_tensor(updates):
+            return torch.median(updates, dim=0).values
         return np.median(updates, axis=0)
 
 

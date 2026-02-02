@@ -1,7 +1,7 @@
 # This file serves as the configurations for the benchmarking experiments, including the basic configuration and the parameters for all attacks and defenses that are going to be tested. You can copy this file and modify it to run your own single attack and defense experiments.
 seed: 42 # seed for reproducibility
 # basic configuration
-epochs: 1000 # global epochs
+epochs: 2000 # global epochs
 algorithm: FedSGD # algorithm, FedSGD, FedAvg, FedOpt
 optimizer: SGD # optimizer for training
 momentum: 0.9
@@ -9,7 +9,7 @@ weight_decay: 5.0e-4
 # lr_scheduler: MultiStepLR # learning rate scheduler
 # milestones: [0.6, 0.8] # milestones for learning rate scheduler
 num_clients: 100 # number of participating clients
-batch_size: 32 # batch_size
+batch_size: 16 # batch_size
 learning_rate: 0.01 # clients' local learning rate
 model: simplecnn # model architecture
 dataset: MNIST # dataset
@@ -18,7 +18,7 @@ im_iid_gamma: 0.01 # For class-imbalanced iid, smaller gamma, stronger imbalance
 tail_cls_from: 4 # For class-imbalanced iid, the tail classes start from 4
 dirichlet_alpha: 0.5 # For non-iid, smaller alpha, stronger heterogeneity, normally use 0.1, 0.5, 0.9, 1
 cache_partition: False # whether to cache the partitioned client indices
-gpu_idx: [0] # Indices of GPU
+gpu_idx: [1] # Indices of GPU
 num_workers: 0  # 指定数据加载时使用的子进程数量
 record_time: False
 
@@ -34,13 +34,13 @@ defense: Mean
 
 attacks:
     - attack: NoAttack
-    - attack: PoisonedFL
-      attack_params:
-          scaling_factor: 8.0
-    - attack: TMRC
-      attack_params:
-          scaling_factor: 8.0
-          importance_ratio": 0.8
+    # - attack: PoisonedFL
+    #   attack_params:
+    #       scaling_factor: 8.0
+    # - attack: TMRC
+    #   attack_params:
+    #       scaling_factor: 8.0
+    #       importance_ratio": 0.8
     - attack: IPM
       attack_params: # Parameters for attacks
           scaling_factor: 0.5 # 0.5, 100

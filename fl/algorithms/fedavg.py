@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from fl.models.model_utils import model2vec, vec2model
+import torch
+from fl.models.model_utils import model2vec_torch, vec2model
 from .algorithmbase import AlgorithmBase
 from fl.algorithms import algorithm_registry
 
@@ -50,7 +51,7 @@ class FedAvg(AlgorithmBase):
         """在本地训练后返回模型参数向量，供服务器聚合。
 
         返回:
-            numpy.ndarray: 展平后的模型参数。
+            torch.Tensor: 展平后的模型参数。
 
         费曼学习法:
             (A) 将本地模型“打包”成向量，上交服务器。
@@ -62,17 +63,17 @@ class FedAvg(AlgorithmBase):
                 >>> update = fedavg.get_local_update()
             (E) 边界条件与测试建议: 需确保模型参数可被访问；可验证向量维度与模型参数数量一致。
         """
-        update = model2vec(self.model)
+        update = model2vec_torch(self.model)
         return update
 
     def update(self, aggregated_update, **kwargs):
         """将服务器聚合后的参数向量写回模型，实现全局同步。
 
         参数:
-            aggregated_update (numpy.ndarray): 聚合后的模型参数向量。
+            aggregated_update (torch.Tensor): 聚合后的模型参数向量。
 
         返回:
-            numpy.ndarray: 与输入相同，便于链式调用或日志记录。
+            torch.Tensor: 与输入相同，便于链式调用或日志记录。
 
         费曼学习法:
             (A) 把所有客户端的平均更新载入全局模型。

@@ -5,6 +5,7 @@
 选取成员数量最多的簇视为良性客户端集合，避免被少量异常更新主导。
 """
 import numpy as np
+import torch
 from aggregators.aggregator_utils import prepare_grad_updates, wrapup_aggregated_grads
 from aggregators.aggregatorbase import AggregatorBase
 from aggregators import aggregator_registry
@@ -60,6 +61,10 @@ class SimpleClustering(AggregatorBase):
         gradient_updates = prepare_grad_updates(
             self.args.algorithm, updates, self.global_model
         )
+        if torch.is_tensor(gradient_updates):
+            gradient_updates = gradient_updates.detach().cpu().numpy()
+        if torch.is_tensor(updates):
+            updates = updates.detach().cpu().numpy()
 
         # 根据配置初始化聚类器，对客户端更新向量执行聚类。
         if self.clustering == "MeanShift":

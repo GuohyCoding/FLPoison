@@ -74,10 +74,23 @@ class Client(Worker):
         self.test_dataset = test_dataset
         # 初始化全局轮次计数器，跟踪客户端参与情况
         self.global_epoch = 0
-        # XXX???????????????????????????
+        # 上一轮的更新，是否记录余弦相似度，L2范数，本地准确率
         self.prev_local_update = None
-        # XXX???????????????????
+        self.need_local_cos_history = False
+        self.need_local_L2_history = False
+        self.local_accuracy_history = False
+        # 记录本地每轮与上一轮更新的余弦相似度
         self.local_cos_history = []
+        self.local_cos = None
+        # 记录本地更新的L2范数
+        self.local_L2_history = []
+        self.local_L2 = None
+        # 记录本地准确率
+        self.local_accuracy_history = []
+        self.local_accuracy = None
+        # 记录Matched Filter Score
+        self.local_mutched_filter_score_history = []
+        self.local_mutched_filter_score = None
         # 通过工厂函数创建模型，保证结构与全局配置一致
         self.model = get_model(args)
         # 初始化优化器与学习率调度器，决定参数更新策略
@@ -311,25 +324,29 @@ class Client(Worker):
             if self.category == "attacker" and "non_omniscient" in self.attributes:
                 self.update = self.non_omniscient()
 
-        # XXX???????????????????????????
-        # cos_similarity = None
-        # if self.prev_local_update is not None and self.update is not None:
-        #     try:
-        #         prev_vec = torch.as_tensor(
-        #             self.prev_local_update, device=self.args.device).flatten().float()
-        #         cur_vec = torch.as_tensor(
-        #             self.update, device=self.args.device).flatten().float()
-        #         prev_norm = torch.norm(prev_vec)
-        #         cur_norm = torch.norm(cur_vec)
-        #         if prev_norm > 0 and cur_norm > 0:
-        #             cos_similarity = torch.dot(prev_vec, cur_vec) / (prev_norm * cur_norm)
-        #             cos_similarity = float(cos_similarity.detach().cpu().item())
-        #     except Exception:
-        #         cos_similarity = None
-        # if cos_similarity is not None:
-        #     print(f"Client {self.worker_id} local cos: {cos_similarity:.6f}")
-        # self.prev_local_update = (self.update.clone() if isinstance(self.update, torch.Tensor)
-        #                           else torch.as_tensor(self.update).clone() if self.update is not None else None)
+        # 如果need_local_cos_history = true，则保存每次当前轮和上一轮的cos余弦相似度
+        if self.need_local_cos_history:
+            cos_similarity = None
+            if self.prev_local_update is not None and self.update is not None:
+                try:
+                    prev_vec = torch.as_tensor(
+                        self.prev_local_update, device=self.args.device).flatten().float()
+                    cur_vec = torch.as_tensor(
+                        self.update, device=self.args.device).flatten().float()
+                    prev_norm = torch.norm(prev_vec)
+                    cur_norm = torch.norm(cur_vec)
+                    if prev_norm > 0 and cur_norm > 0:
+                        cos_similarity = torch.dot(prev_vec, cur_vec) / (prev_norm * cur_norm)
+                        cos_similarity = float(cos_similarity.detach().cpu().item())  # XXX：不确定CPU会不会影响速度
+                except Exception:
+                    cos_similarity = None
+            if cos_similarity is not None:
+                # print(f"Client {self.worker_id} local cos: {cos_similarity:.6f}")
+                self.local_cos = cos_similarity
+                self.local_cos_history.append(cos_similarity)
+
+        self.prev_local_update = (self.update.clone() if isinstance(self.update, torch.Tensor)
+                                  else torch.as_tensor(self.update).clone() if self.update is not None else None)
 
         # 成功准备更新后，推进全局通信轮次计数
         self.global_epoch += 1

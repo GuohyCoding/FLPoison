@@ -140,4 +140,4 @@ class LabelFlipping(DPBase, Client):
 # __AI_ANNOTATION_SUMMARY__
 # 类 LabelFlipping: 标签翻转数据投毒攻击器。
 # 方法 __init__: 初始化标签映射与投毒调度，构造训练数据加载器。
-# 方法 define_synthesizer: 创建并定制标签翻转合成器，控制批次投毒与触发器逻辑。*** End Patch*** End Patch{"code":400,"stdout":"","stderr":"","error":"Invalid JSON: Expecting value: line 1 column 1 (char 0)"} ***!
+# 方法 define_synthesizer: 创建并定制标签翻转合成器，控制批次投毒与触发器逻辑。

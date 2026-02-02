@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
+import torch
 from global_utils import actor
 from attackers.pbases.mpbase import MPBase
 from attackers import attacker_registry
@@ -97,12 +97,17 @@ class Mimic(MPBase, Client):
             (F) 背景参考: Mimic 攻击策略、联邦聚合偏置分析。
         """
         assert self.choice < len(clients), f"choice {self.choice} is out of range"
-        attack_vec = clients[self.choice].update
+        device = self.args.device
+        update = clients[self.choice].update
+        if torch.is_tensor(update):
+            attack_vec = update.detach().to(device)
+        else:
+            attack_vec = torch.as_tensor(update, device=device)
         # repeat attack vector for all attackers
-        return np.tile(attack_vec, (self.args.num_adv, 1))
+        return attack_vec.unsqueeze(0).repeat(self.args.num_adv, 1)
 
 
 # __AI_ANNOTATION_SUMMARY__
 # 类 Mimic: 模仿固定良性客户端更新的模型投毒攻击器。
 # 方法 __init__: 设置默认模仿对象索引与聚合算法。
-# 方法 omniscient: 复制指定客户端的更新并批量提交。*** End Patch*** End Patch to=functions.apply_patchчнай
+# 方法 omniscient: 复制指定客户端的更新并批量提交。

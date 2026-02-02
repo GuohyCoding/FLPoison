@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import torch
 from global_utils import actor
 from attackers.pbases.mpbase import MPBase
 from attackers import attacker_registry
@@ -204,8 +205,16 @@ def Min(clients, type, dev_type, gamma_init, stop_threshold):
         raise ValueError(f"Unsupported metric type: {type}")
 
     # 收集所有良性客户端的更新，并计算均值作为基线方向。
-    benign_update = np.array(
-        [i.update for i in clients if i.category == "benign"])
+    benign_update = np.stack(
+        [
+            i.update.detach().cpu().numpy()
+            if torch.is_tensor(i.update)
+            else np.asarray(i.update)
+            for i in clients
+            if i.category == "benign"
+        ],
+        axis=0,
+    )
     if benign_update.size == 0:
         raise ValueError("No benign clients available for Min attack.")
     benign_mean = np.mean(benign_update, axis=0)

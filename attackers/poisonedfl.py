@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
 import torch
+import numpy as np
 
 from attackers import attacker_registry
 from attackers.pbases.mpbase import MPBase
@@ -22,7 +22,7 @@ class PoisonedFL(MPBase, Client):
     def __init__(self, args, worker_id, train_dataset, test_dataset):
         Client.__init__(self, args, worker_id, train_dataset, test_dataset)
         # 沿用 MXNet 参考实现的默认放大系数，方便与原结果对齐；脚本参数可覆盖以做消融。
-        self.default_attack_params = {"scaling_factor": 8.0}  # scaling_factor设为8防止溢出
+        self.default_attack_params = {"scaling_factor": 10.0}  
         self.update_and_set_attr()
 
         self.current_scaling_factor = float(self.scaling_factor)
@@ -44,9 +44,13 @@ class PoisonedFL(MPBase, Client):
             return None
 
         # 当前废播的全局模型向量，作为本轮计算 residual/漂移的基准。
-        current_global_vec = torch.from_numpy(
-            np.asarray(self.global_weights_vec, dtype=np.float32)
-        ).flatten()
+        device = self.args.device
+        if torch.is_tensor(self.global_weights_vec):
+            current_global_vec = self.global_weights_vec.detach().flatten().to(device)
+        else:
+            current_global_vec = torch.as_tensor(
+                self.global_weights_vec, dtype=torch.float32, device=device
+            ).flatten()
 
         # 首次进入时初始化固定方向与基准快照。
         if self.fixed_rand is None:
@@ -62,8 +66,7 @@ class PoisonedFL(MPBase, Client):
             self.last_50_global_vec = current_global_vec.clone()
 
             # XXX
-            print("fixed_rand", self.fixed_rand)
-            print("fixed_rand.shape[0]", self.fixed_rand.shape[0])
+            # self._log_message(f"fixed_rand[:100]={self.fixed_rand[:100].detach().cpu()}")
 
         # history 为连续两轮全局模型的差值，等价于 MXNet 里的 current_model - last_model。
         history_vec = None
@@ -79,12 +82,16 @@ class PoisonedFL(MPBase, Client):
 
         # 缺少历史或上一轮恶意梯度时，先返回良性更新以维持数值稳定。
         if history_vec is None or self.last_grad_vec is None:
-            benign_updates = np.stack(
-                [np.array(client.update, copy=True) for client in attackers], axis=0
-            ).astype(np.float32)
-            self.last_grad_vec = torch.from_numpy(
-                np.mean(benign_updates, axis=0)
-            ).float()
+            benign_updates = torch.stack(
+                [
+                    client.update.detach().to(device)
+                    if torch.is_tensor(client.update)
+                    else torch.as_tensor(client.update, device=device)
+                    for client in attackers
+                ],
+                dim=0,
+            )
+            self.last_grad_vec = benign_updates.mean(dim=0)
             # 同步 50 轮快照，确保自适应缩放基于统一的全局节奏。
             if self.global_epoch % 50 == 0:
                 self.last_50_global_vec = current_global_vec.clone()
@@ -103,8 +110,6 @@ class PoisonedFL(MPBase, Client):
         )
         scale = torch.norm(residual.unsqueeze(1), dim=1)
         deviation = scale * self.fixed_rand / (torch.norm(scale) + eps)
-        # XXX：测试
-        # print("deviation: ", deviation)
 
         current_epoch = int(self.global_epoch)
         if current_epoch % 50 == 0:
@@ -121,33 +126,49 @@ class PoisonedFL(MPBase, Client):
 
         # 按固定方向生成恶意更新，并复制到所有攻击者，复用了良性 update 的形状以兼容聚合。
         mal_update = lamda_succ * deviation
-        mal_update_np = mal_update.detach().cpu().numpy().astype(np.float32)
-        malicious_updates = np.tile(mal_update_np, (len(attackers), 1))
+        malicious_updates = mal_update.detach().unsqueeze(0).repeat(len(attackers), 1)
+
+        # if current_epoch % 20 == 0:
+        #     # XXX:测试
+        #     mal_str = np.array2string(
+        #         mal_update[:100].detach().cpu().numpy(),
+        #         separator=" ",
+        #         max_line_width=1000,
+        #         formatter={"float_kind": lambda x: f"{x:.2e}"},
+        #     )
+        #     self._log_message(f"mal_update={mal_str}")
+        #     update = attackers[0].update
+        #     if torch.is_tensor(update):
+        #         attacker_update = update.detach().cpu().numpy()
+        #     else:
+        #         attacker_update = np.array(update, copy=True)
+        #     benign_update_norm = float(np.linalg.norm(attacker_update))
+        #     benign_str = np.array2string(
+        #         attacker_update[:100],
+        #         separator=" ",
+        #         max_line_width=1000,
+        #         formatter={"float_kind": lambda x: f"{x:.2e}"},
+        #     )
+        #     self._log_message(f"benign_update={benign_str}")
+        #     mal_update_norm = float(mal_update.norm().item())
+        #     ratio = mal_update_norm / (benign_update_norm + 1e-12)
+        #     self._log_message(f"mal_benign_l2_ratio={ratio}")
+        #     self._log_message(f"lamda_succ={lamda_succ}")
 
         # 持久化状态，下一轮继续基于同一方向与缩放系数迭代。
         self.current_scaling_factor = sf
-        self.last_grad_vec = torch.from_numpy(malicious_updates[0]).float()
+        self.last_grad_vec = malicious_updates[0].detach().clone()
         if current_epoch % 50 == 0:
             self.last_50_global_vec = current_global_vec.clone()
 
-        # XXX：测试，恶意更新和良性更新对比
-        # print("malicious_updates: ", malicious_updates)
-        if current_epoch % 50 == 0:
-            benign_clients = [c for c in clients if c.category != "attacker"]
-            benign_updates = np.stack([np.array(c.update, copy=True) for c in benign_clients], axis=0)
-            benign_norm = np.linalg.norm(benign_updates.mean(axis=0))
-            cos = torch.nn.functional.cosine_similarity(
-                mal_update.flatten(), history_vec.flatten(), dim=0
-            ).item()
-            print(
-                f"[PoisonedFL debug] epoch={current_epoch}, sf={sf:.2e}, "
-                f"hist_norm={history_norm.item():.2e}, mal_norm={torch.norm(mal_update).item():.2e}, "
-                f"ratio_mal_hist={torch.norm(mal_update).item()/history_norm.item():.2e}, "
-                f"ratio_mal_benign={torch.norm(mal_update).item()/(benign_norm+1e-9):.2e}, "
-                f"cos_mal_hist={cos:.3f}"
-            )
-
         return malicious_updates
+
+    def _log_message(self, msg):
+        logger = getattr(self.args, "logger", None)
+        if logger is not None:
+            logger.info(msg)
+        else:
+            print(msg)   
 
     @staticmethod
     def _get_thresholds(dim):

@@ -105,7 +105,10 @@ class FLAME(AggregatorBase):
             min_samples=1,
             allow_single_cluster=True,
         )
-        cluster.fit(model_updates.astype(np.float64))
+        if isinstance(model_updates, torch.Tensor):
+            # HDBSCAN expects a NumPy array on CPU.
+            model_updates = model_updates.detach().cpu().numpy()
+        cluster.fit(model_updates.astype(np.float64, copy=False))
         return [idx for idx, label in enumerate(cluster.labels_) if label == 0]
 
     def adpative_clipping(self, last_global_model, gradient_updates, benign_idx):
@@ -123,6 +126,8 @@ class FLAME(AggregatorBase):
         复杂度:
             时间复杂度 O(n * d); 空间复杂度 O(d)。
         """
+        if torch.is_tensor(gradient_updates):
+            gradient_updates = gradient_updates.detach().cpu().numpy()
         median_norm = np.median(np.linalg.norm(gradient_updates, axis=1))
         clipped_gradient_updates = normclipping(
             gradient_updates[benign_idx], median_norm)

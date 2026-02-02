@@ -9,6 +9,7 @@ SignGuard 聚合器：结合范数门限与符号统计聚类过滤恶意客户�
 """
 from aggregators.aggregatorbase import AggregatorBase
 import numpy as np
+import torch
 from aggregators import aggregator_registry
 from aggregators.aggregator_utils import prepare_grad_updates, wrapup_aggregated_grads
 from sklearn.cluster import DBSCAN, KMeans, MeanShift, estimate_bandwidth
@@ -81,6 +82,8 @@ class SignGuard(AggregatorBase):
         gradient_updates = prepare_grad_updates(
             self.args.algorithm, updates, self.global_model
         )
+        if torch.is_tensor(gradient_updates):
+            gradient_updates = gradient_updates.detach().cpu().numpy()
 
         # 1. 基于范数的上下阈值过滤客户端。
         S1_benign_idx, median_norm, client_norms = self.norm_filtering(

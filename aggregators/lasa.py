@@ -7,6 +7,7 @@ LASA 聚合器：结合稀疏化与双重中位数检测的鲁棒联邦防御。
 """
 from aggregators.aggregatorbase import AggregatorBase
 import numpy as np
+import torch
 from aggregators import aggregator_registry
 from fl.models.model_utils import state2vec, vec2state
 
@@ -60,6 +61,8 @@ class LASA(AggregatorBase):
         复杂度:
             时间复杂度 O(n * d)，空间复杂度 O(n * d)；n 为客户端数，d 为参数维度。
         """
+        if torch.is_tensor(updates):
+            updates = updates.detach().cpu().numpy()
         num_clients = len(updates)
         self.global_model = kwargs['last_global_model']
 
