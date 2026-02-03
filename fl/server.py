@@ -220,7 +220,7 @@ class Server(Worker):
             )
 
         # 增加L2 clip防止梯度爆炸
-        max_norm = 10000.0
+        max_norm = 100.0
         update_norm = torch.linalg.norm(self.aggregated_update)
         if update_norm > max_norm:
             self.aggregated_update = self.aggregated_update * (

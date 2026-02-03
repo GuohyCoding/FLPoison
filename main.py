@@ -10,6 +10,7 @@
 import gc
 import logging
 import time
+from pathlib import Path
 import numpy as np
 import torch
 
@@ -298,10 +299,21 @@ def main(args, cli_args):
     # if Benchmarks is True, run all combinations of attacks and defenses
     if cli_args.benchmark:
         benchmark_preprocess(args)
+        
+        # XXX: 若任务已完成则跳过
+        png_path = Path(args.output).with_suffix(".png")
+        if png_path.exists():
+            print(f"PNG {png_path.name} exists, skip")
+            return
+
         fl_run(args)
     else:
         override_args(args, cli_args)
         single_preprocess(args)
+        png_path = Path(args.output).with_suffix(".png")
+        if png_path.exists():
+            print(f"PNG {png_path.name} exists, skip")
+            return
         fl_run(args)
 
 
