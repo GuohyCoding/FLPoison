@@ -85,6 +85,7 @@ def fl_run(args):
     args.logger.info("Clients and server are initialized")
     args.logger.info("Starting Training...")
     prev_aggregated_update = None
+    low_acc_streak = 0
     for global_epoch in range(args.epochs):
         epoch_msg = f"Epoch {global_epoch:<3}"
         # print(f"Global epoch {global_epoch} begin")
@@ -107,6 +108,10 @@ def fl_run(args):
 
         avg_train_loss = avg_value(avg_train_loss)
         avg_train_acc = avg_value(avg_train_acc)
+        if avg_train_acc < 0.15:
+            low_acc_streak += 1
+        else:
+            low_acc_streak = 0
         epoch_msg += f"  Train Acc: {avg_train_acc:.4f}  Train loss: {avg_train_loss:.4f}  "
 
         # perform post-training attacks, for omniscient model poisoning attack, pass all clients
@@ -116,27 +121,27 @@ def fl_run(args):
         the_server.collect_updates(global_epoch)
         the_server.aggregation()  # run the configured robust mean/aggregator
 
-        # XXX：测试当前轮和上一轮的方向；
-        cos_similarity = float("nan")
-        global_update_l2 = float("nan")
-        if the_server.aggregated_update is None:
-            current_update = None
-        elif torch.is_tensor(the_server.aggregated_update):
-            current_update = the_server.aggregated_update.detach().cpu().numpy()
-        else:
-            current_update = np.asarray(the_server.aggregated_update)
-        if prev_aggregated_update is not None and current_update is not None:
-            prev_norm = np.linalg.norm(prev_aggregated_update)
-            curr_norm = np.linalg.norm(current_update)
-            if prev_norm > 0 and curr_norm > 0:
-                cos_similarity = float(
-                    np.dot(prev_aggregated_update, current_update) / (prev_norm * curr_norm))
-            global_update_l2 = float(curr_norm)
-        elif current_update is not None:
-            global_update_l2 = float(np.linalg.norm(current_update))
-        prev_aggregated_update = np.copy(
-            current_update) if current_update is not None else None
-        epoch_msg += f"Cos: {cos_similarity:.3f}  L2: {global_update_l2:.4f}  "
+        # # XXX：测试当前轮和上一轮的方向；
+        # cos_similarity = float("nan")
+        # global_update_l2 = float("nan")
+        # if the_server.aggregated_update is None:
+        #     current_update = None
+        # elif torch.is_tensor(the_server.aggregated_update):
+        #     current_update = the_server.aggregated_update.detach().cpu().numpy()
+        # else:
+        #     current_update = np.asarray(the_server.aggregated_update)
+        # if prev_aggregated_update is not None and current_update is not None:
+        #     prev_norm = np.linalg.norm(prev_aggregated_update)
+        #     curr_norm = np.linalg.norm(current_update)
+        #     if prev_norm > 0 and curr_norm > 0:
+        #         cos_similarity = float(
+        #             np.dot(prev_aggregated_update, current_update) / (prev_norm * curr_norm))
+        #     global_update_l2 = float(curr_norm)
+        # elif current_update is not None:
+        #     global_update_l2 = float(np.linalg.norm(current_update))
+        # prev_aggregated_update = np.copy(
+        #     current_update) if current_update is not None else None
+        # epoch_msg += f"Cos: {cos_similarity:.3f}  L2: {global_update_l2:.4f}  "
 
         # 服务器端执行指定聚合规则（如 FedAvg、Robust Aggregator）来融合更新。
         the_server.update_global()  # push the aggregated model back to the global buffer
@@ -150,6 +155,12 @@ def fl_run(args):
         # 输出当前全局轮的训练/测试统计信息，便于追踪收敛与攻击成效。
         epoch_msg += "\t".join(
             [f"{key}: {value:.4f}" for key, value in test_stats.items()])
+        
+        if low_acc_streak >= 50:
+            epoch_msg += "\nAttack succeeded."
+            args.logger.info(epoch_msg)
+            break
+
         args.logger.info(epoch_msg)
         # clear memory to reduce GPU/CPU pressure in long experiments
         # 清理 Python/GPU 缓存，避免长时间实验导致显存/内存膨胀。

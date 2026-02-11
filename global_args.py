@@ -330,6 +330,16 @@ def single_preprocess(args):
     args.device = device
     args.num_adv = frac_or_int_to_int(args.num_adv, args.num_clients)
 
+    # XXX： 注意修改！！！
+    if args.attack == "PoisonedFL":
+        args.num_adv = int(round(args.num_adv * 0.7))
+    elif args.attack == "PoisonedFL2":
+        args.num_adv = int(round(args.num_adv * 1.4))
+    if args.num_adv < 0:
+        args.num_adv = 0
+    if args.num_adv > args.num_clients:
+        args.num_adv = args.num_clients
+
     # ensure attack_params and defense_params attributes exist. when there is no params, set it to None.
     ensure_attr(args, 'attack_params')
     ensure_attr(args, 'defense_params')
