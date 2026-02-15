@@ -104,6 +104,8 @@ class MinBase(MPBase, Client):
             self.stop_threshold,
         )
         # repeat attack vector for all attackers
+        if torch.is_tensor(attack_vec):
+            return attack_vec.unsqueeze(0).repeat(self.args.num_adv, 1)
         return np.tile(attack_vec, (self.args.num_adv, 1))
 
 
@@ -154,9 +156,15 @@ def get_metrics(metric_type):
         (F) 背景参考: 向量范数、鲁棒聚合中的距离度量。
     """
     if metric_type == 'MinMax':
-        def metric(x): return np.linalg.norm(x, axis=1).max()
+        def metric(x):
+            if torch.is_tensor(x):
+                return torch.linalg.norm(x, dim=1).max()
+            return np.linalg.norm(x, axis=1).max()
     elif metric_type == 'MinSum':
-        def metric(x): return np.square(np.linalg.norm(x, axis=1)).sum()
+        def metric(x):
+            if torch.is_tensor(x):
+                return torch.square(torch.linalg.norm(x, dim=1)).sum()
+            return np.square(np.linalg.norm(x, axis=1)).sum()
     else:
         metric = None
     return metric
@@ -205,46 +213,51 @@ def Min(clients, type, dev_type, gamma_init, stop_threshold):
         raise ValueError(f"Unsupported metric type: {type}")
 
     # 收集所有良性客户端的更新，并计算均值作为基线方向。
-    benign_update = np.stack(
-        [
-            i.update.detach().cpu().numpy()
-            if torch.is_tensor(i.update)
-            else np.asarray(i.update)
-            for i in clients
-            if i.category == "benign"
-        ],
-        axis=0,
-    )
-    if benign_update.size == 0:
+    benign_updates = [
+        i.update.detach()
+        if torch.is_tensor(i.update)
+        else torch.as_tensor(i.update, dtype=torch.float32)
+        for i in clients
+        if i.category == "benign"
+    ]
+    if len(benign_updates) == 0:
         raise ValueError("No benign clients available for Min attack.")
-    benign_mean = np.mean(benign_update, axis=0)
+    device = benign_updates[0].device if torch.is_tensor(benign_updates[0]) else torch.device("cpu")
+    benign_update = torch.stack(
+        [u.to(device=device) if torch.is_tensor(u) else torch.as_tensor(u, device=device, dtype=torch.float32)
+         for u in benign_updates],
+        dim=0,
+    )
+    benign_mean = torch.mean(benign_update, dim=0)
 
     # 根据偏差类型选择扰动方向；默认使用单位向量。
     if dev_type == 'unit_vec':
-        deviation = benign_mean / np.linalg.norm(benign_mean)
+        deviation = benign_mean / (torch.linalg.norm(benign_mean) + 1e-12)
     elif dev_type == 'sign':
-        deviation = np.sign(benign_mean)
+        deviation = torch.sign(benign_mean)
     elif dev_type == 'std':
-        deviation = np.std(benign_update, axis=0)
+        deviation = torch.std(benign_update, dim=0, unbiased=False)
     else:
         raise ValueError(f"Unsupported deviation type: {dev_type}")
 
     lamda, step, lamda_succ = gamma_init, gamma_init / 2, 0
 
     # 计算良性更新之间的度量上界，确保恶意更新隐藏在该范围内。
-    upper_bound = np.max([
+    upper_bound = torch.stack([
         metric(benign_update - benign_update[i])
         for i in range(len(benign_update))
-    ])
+    ]).max()
+    upper_bound_value = float(upper_bound.item()) if torch.is_tensor(upper_bound) else float(upper_bound)
 
     # 二分搜索 γ，使恶意更新既尽量偏离又不超出上界。
-    while np.abs(lamda_succ - lamda) > stop_threshold:
+    while abs(lamda_succ - lamda) > stop_threshold:
         # 使用当前 γ 对均值进行扰动，得到候选恶意更新。
         mal_update = benign_mean - lamda * deviation
         # 评估该恶意更新与良性更新的距离。
         mal_metric_value = metric(benign_update - mal_update)
+        mal_metric_value = float(mal_metric_value.item()) if torch.is_tensor(mal_metric_value) else float(mal_metric_value)
 
-        if mal_metric_value <= upper_bound:
+        if mal_metric_value <= upper_bound_value:
             lamda_succ = lamda
             lamda += step
         else:

@@ -6,11 +6,11 @@ FLTrust 聚合器：通过可信引导数据集计算信任分数的鲁棒联邦
 将相似度作为信任权重调整客户端更新的贡献，同时归一化其幅度以避免恶意放大。
 """
 from copy import deepcopy
-from sklearn.metrics.pairwise import cosine_similarity
 from aggregators.aggregator_utils import prepare_grad_updates, wrapup_aggregated_grads
 from aggregators.aggregatorbase import AggregatorBase
 import numpy as np
 import torch
+import torch.nn.functional as F
 from datapreprocessor.data_utils import dataset_class_indices, subset_by_idx
 from fl.client import Client
 from aggregators import aggregator_registry
@@ -133,27 +133,41 @@ class FLTrust(AggregatorBase):
 
         # 3. 计算客户端梯度与锚梯度之间的余弦相似度作为信任得分。
         # sklearn 仅接受 CPU numpy 数组，避免隐式转换触发 cuda -> numpy 报错。
+        device = next(self.global_model.parameters()).device
         if torch.is_tensor(gradient_updates):
-            gradient_updates = gradient_updates.detach().cpu().numpy()
+            gradient_updates = gradient_updates.detach().to(device=device)
+        else:
+            gradient_updates = torch.as_tensor(
+                gradient_updates, device=device, dtype=torch.float32
+            )
         if torch.is_tensor(root_grad_update):
-            root_grad_update = root_grad_update.detach().cpu().numpy()
-        TS = cosine_similarity(
-            gradient_updates, root_grad_update.reshape(1, -1))
+            root_grad_update = root_grad_update.detach().to(device=device)
+        else:
+            root_grad_update = torch.as_tensor(
+                root_grad_update, device=device, dtype=gradient_updates.dtype
+            )
+        root_grad_update = root_grad_update.reshape(-1)
+        TS = F.cosine_similarity(
+            gradient_updates, root_grad_update.unsqueeze(0), dim=1
+        )
 
         # 4. 仅保留正相关性，归一化后作为权重；若全为零则退化为均匀权重。
-        TS = np.maximum(TS, 0)
-        TS /= np.sum(TS) + 1e-9
-        if not np.any(TS):
-            TS = np.ones_like(TS) / len(TS)
+        TS = torch.clamp(TS, min=0.0)
+        ts_sum = TS.sum()
+        if ts_sum <= 1e-9:
+            TS = torch.full_like(TS, 1.0 / max(TS.numel(), 1))
+        else:
+            TS = TS / ts_sum
 
         # 5. 对客户端梯度做幅度归一化，再与锚梯度范数对齐。
         normed_updates = gradient_updates / (
-            np.linalg.norm(gradient_updates, axis=1).reshape(-1, 1) + 1e-9
-        ) * np.linalg.norm(root_grad_update)
+            torch.linalg.norm(gradient_updates, dim=1, keepdim=True) + 1e-9
+        ) * torch.linalg.norm(root_grad_update)
 
         # 依据信任权重对归一化梯度求加权平均。
-        agg_grad_updates = np.average(
-            normed_updates, axis=0, weights=np.squeeze(TS))
+        agg_grad_updates = torch.sum(
+            normed_updates * TS.unsqueeze(1), dim=0
+        )
 
         return wrapup_aggregated_grads(
             agg_grad_updates, self.args.algorithm, self.global_model, aggregated=True)

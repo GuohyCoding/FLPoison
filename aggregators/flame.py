@@ -10,8 +10,6 @@ FLAME 聚合器: 结合余弦聚类、裁剪与噪声注入的联邦鲁棒防御
 from copy import deepcopy
 import torch
 from aggregators.aggregatorbase import AggregatorBase
-import numpy as np
-import hdbscan
 from aggregators import aggregator_registry
 from aggregators.aggregator_utils import normclipping, prepare_updates
 from fl.models.model_utils import add_vec2model, model2vec
@@ -98,18 +96,41 @@ class FLAME(AggregatorBase):
         复杂度:
             时间复杂度约 O(n log n) 到 O(n^2); 空间复杂度 O(n^2)。
         """
-        cluster = hdbscan.HDBSCAN(
+        if not torch.cuda.is_available():
+            raise RuntimeError(
+                "FLAME cosine_clustering requires CUDA, but no GPU is available."
+            )
+
+        try:
+            import cupy as cp
+            from cuml.cluster import HDBSCAN as cuHDBSCAN
+        except Exception as exc:
+            raise RuntimeError(
+                "GPU clustering requires `cupy` and `cuml`. "
+                "Please install RAPIDS (cuml/cupy) for your CUDA version."
+            ) from exc
+
+        if not torch.is_tensor(model_updates):
+            model_updates = torch.as_tensor(model_updates, dtype=torch.float32)
+        model_updates = model_updates.detach().contiguous()
+        if not model_updates.is_cuda:
+            model_updates = model_updates.to(device="cuda", non_blocking=True)
+
+        try:
+            model_updates_cp = cp.from_dlpack(model_updates)
+        except Exception:
+            model_updates_cp = cp.fromDlpack(
+                torch.utils.dlpack.to_dlpack(model_updates)
+            )
+
+        cluster = cuHDBSCAN(
             metric="cosine",
-            algorithm="generic",
             min_cluster_size=self.args.num_clients // 2 + 1,
             min_samples=1,
             allow_single_cluster=True,
         )
-        if isinstance(model_updates, torch.Tensor):
-            # HDBSCAN expects a NumPy array on CPU.
-            model_updates = model_updates.detach().cpu().numpy()
-        cluster.fit(model_updates.astype(np.float64, copy=False))
-        return [idx for idx, label in enumerate(cluster.labels_) if label == 0]
+        labels = cp.asnumpy(cluster.fit_predict(model_updates_cp))
+        return [idx for idx, label in enumerate(labels) if label == 0]
 
     def adpative_clipping(self, last_global_model, gradient_updates, benign_idx):
         """
@@ -126,12 +147,23 @@ class FLAME(AggregatorBase):
         复杂度:
             时间复杂度 O(n * d); 空间复杂度 O(d)。
         """
+        device = next(last_global_model.parameters()).device
         if torch.is_tensor(gradient_updates):
-            gradient_updates = gradient_updates.detach().cpu().numpy()
-        median_norm = np.median(np.linalg.norm(gradient_updates, axis=1))
+            gradient_updates = gradient_updates.detach().to(device=device)
+        else:
+            gradient_updates = torch.as_tensor(
+                gradient_updates, device=device, dtype=torch.float32
+            )
+
+        grad_norms = torch.linalg.norm(gradient_updates, dim=1)
+        median_norm = torch.quantile(grad_norms, q=0.5).item()
+        benign_idx_tensor = torch.as_tensor(
+            benign_idx, device=gradient_updates.device, dtype=torch.long
+        )
         clipped_gradient_updates = normclipping(
-            gradient_updates[benign_idx], median_norm)
-        aggregated_gradient = np.mean(clipped_gradient_updates, axis=0)
+            gradient_updates.index_select(0, benign_idx_tensor), median_norm
+        )
+        aggregated_gradient = clipped_gradient_updates.mean(dim=0)
         aggregated_model = add_vec2model(aggregated_gradient, last_global_model)
         return aggregated_model, median_norm
 

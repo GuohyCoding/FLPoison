@@ -108,7 +108,7 @@ def fl_run(args):
 
         avg_train_loss = avg_value(avg_train_loss)
         avg_train_acc = avg_value(avg_train_acc)
-        if avg_train_acc < 0.15:
+        if avg_train_acc < 0.18:
             low_acc_streak += 1
         else:
             low_acc_streak = 0

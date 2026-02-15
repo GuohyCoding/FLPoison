@@ -104,23 +104,39 @@ class FangAttack(MPBase, Client):
             (F) 背景参考: Krum 聚合算法原理、Byzantine 鲁棒聚合相关文献。
         """
         # 使用已获取的 update 与各类联邦算法兼容，不直接依赖权重或梯度。
-        before_attack_update = np.stack(
+        device = self.update.device if torch.is_tensor(self.update) else (
+            self.global_weights_vec.device if torch.is_tensor(self.global_weights_vec) else torch.device("cpu")
+        )
+        before_attack_update = torch.stack(
             [
-                c.update.detach().cpu().numpy()
+                c.update.detach().to(device=device)
                 if torch.is_tensor(c.update)
-                else np.asarray(c.update)
+                else torch.as_tensor(c.update, device=device, dtype=torch.float32)
                 for c in clients
                 if c.category == "attacker"
             ],
-            axis=0,
+            dim=0,
         )
-        attacker_updates = np.zeros(
-            (self.args.num_adv, len(self.update)), dtype=np.float32)
+        attacker_updates = torch.zeros(
+            (self.args.num_adv, before_attack_update.shape[1]),
+            device=device,
+            dtype=before_attack_update.dtype,
+        )
         # 估计攻击方向：以攻击者提交的平均更新为参考，取符号方向。
-        est_direction = np.sign(np.mean(before_attack_update, axis=0))
+        est_direction = torch.sign(torch.mean(before_attack_update, dim=0))
 
         # 根据聚合算法确定扰动基准（FedAvg 使用全局权重，FedSGD 则以 0 为基准）。
-        perturbation_base = self.global_weights_vec if self.args.algorithm == "FedAvg" else 0
+        if self.args.algorithm == "FedAvg":
+            if torch.is_tensor(self.global_weights_vec):
+                perturbation_base = self.global_weights_vec.detach().to(
+                    device=device, dtype=before_attack_update.dtype
+                )
+            else:
+                perturbation_base = torch.as_tensor(
+                    self.global_weights_vec, device=device, dtype=before_attack_update.dtype
+                )
+        else:
+            perturbation_base = torch.zeros_like(est_direction)
 
         # 模拟支持者数量，逐步寻找能被 Krum 选中的扰动大小。
         simulation_attack_number = 1
@@ -128,9 +144,10 @@ class FangAttack(MPBase, Client):
         while simulation_attack_number < self.args.num_adv:
             lambda_value = 1.0
             # 构造模拟更新矩阵，前 num_adv 行使用攻击者的原始更新。
-            simulation_updates = np.empty(
-                (self.args.num_adv + simulation_attack_number, len(self.update)),
-                dtype=np.float32,
+            simulation_updates = torch.empty(
+                (self.args.num_adv + simulation_attack_number, before_attack_update.shape[1]),
+                device=device,
+                dtype=before_attack_update.dtype,
             )
             simulation_updates[:self.args.num_adv] = before_attack_update
 

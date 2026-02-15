@@ -78,6 +78,13 @@ class DnC(AggregatorBase):
         gradient_updates = prepare_grad_updates(
             self.args.algorithm, updates, self.global_model)
 
+        # 尽量在 GPU 上完成计算（若可用）
+        if torch.is_tensor(gradient_updates):
+            try:
+                device = next(self.global_model.parameters()).device
+            except StopIteration:
+                device = gradient_updates.device
+            gradient_updates = gradient_updates.to(device)
         num_param = gradient_updates.shape[1]
         # 初始化为所有客户端，随着迭代逐步交集缩小。
         benign_idx = set(range(self.args.num_clients))
@@ -88,11 +95,10 @@ class DnC(AggregatorBase):
             # 防御性判断：确保 sample_size 至少为 1，避免后续错误。
             if sample_size <= 0:
                 raise ValueError("subsample_frac 太小，导致子采样维度为 0。")
-            param_idx = np.random.choice(
-                np.arange(num_param), sample_size, replace=False)
+            param_idx = torch.randperm(num_param, device=gradient_updates.device)[:sample_size]
 
             # 根据子采样索引提取梯度子向量。
-            sampled_grads = gradient_updates[:, param_idx]
+            sampled_grads = gradient_updates.index_select(1, param_idx)
 
             # 2. 计算均值并进行中心化，消除整体偏移影响。
             mu = torch.mean(sampled_grads, dim=0)
@@ -110,11 +116,12 @@ class DnC(AggregatorBase):
                 raise ValueError("过滤数量过大，导致没有客户端被保留。")
 
             # 取得分最小的 k 个索引作为当前迭代的候选良性客户端。
-            score_np = score.detach().cpu().numpy()
-            dnc_idx = np.argpartition(score_np, k, axis=0)[:k] if k != len(
-                score_np) else np.arange(len(score_np))
+            if k != len(score):
+                dnc_idx = torch.topk(score, k, largest=False).indices
+            else:
+                dnc_idx = torch.arange(len(score), device=score.device)
             # 与历史良性集合取交集，保证多轮一致认为可靠。
-            benign_idx = benign_idx.intersection(set(dnc_idx))
+            benign_idx = benign_idx.intersection(set(dnc_idx.detach().cpu().tolist()))
 
         # 使用最终保留的客户端梯度执行聚合并封装返回。
         return wrapup_aggregated_grads(

@@ -200,6 +200,7 @@ class ThreeDFed(MPBase, Client):
         """计算指示器（indicator）以评估模型更新（未完成）。"""
         total_devices = self.args.num_adv + self.num_decoy
         no_layer = 0
+        gradient, curvature = None, None
         # 1. Find indicators
         for i, data in enumerate(self.train_loader):
             # Compute gradient for backdoor batch with cross entropy loss
@@ -221,14 +222,24 @@ class ThreeDFed(MPBase, Client):
                                         x.requires_grad],
                                        retain_graph=True
                                        )[no_layer]
-            gradient += grad.detach().cpu().numpy()
-            curvature += curv.detach().cpu().numpy()
+            grad_t = grad.detach()
+            curv_t = curv.detach()
+            if gradient is None:
+                gradient = torch.zeros_like(grad_t)
+                curvature = torch.zeros_like(curv_t)
+            gradient = gradient + grad_t
+            curvature = curvature + curv_t
 
-        curvature = np.abs(curvature.flatten())
+        if curvature is None:
+            return torch.tensor([], device=self.args.device, dtype=torch.long)
+        curvature = torch.abs(curvature.flatten())
         # choose near zero curvature as indicators
-        indicator_indices = np.argpartition(curvature, total_devices)[
-            :total_devices]
+        k = min(int(total_devices), int(curvature.numel()))
+        if k <= 0:
+            return torch.tensor([], device=curvature.device, dtype=torch.long)
+        indicator_indices = torch.topk(curvature, k=k, largest=False).indices
         # TODO:
+        return indicator_indices
 
     def read_indicator(self, clients, indicator_indices):
         """读取指示器反馈并判定接受/裁剪/拒绝状态（草稿）。"""

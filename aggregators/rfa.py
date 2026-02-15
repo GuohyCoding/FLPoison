@@ -57,7 +57,17 @@ class RFA(AggregatorBase):
         复杂度:
             时间复杂度 O(num_iters * n * d)；空间复杂度 O(d)。
         """
-        alphas = np.ones(len(updates), dtype=np.float32) / len(updates)
+        num_updates = len(updates)
+        if torch.is_tensor(updates):
+            device = updates.device
+            dtype = updates.dtype
+        elif isinstance(updates, (list, tuple)) and updates and torch.is_tensor(updates[0]):
+            device = updates[0].device
+            dtype = updates[0].dtype
+        else:
+            device = None
+            dtype = torch.float32
+        alphas = torch.full((num_updates,), 1.0 / num_updates, device=device, dtype=dtype)
         # 使用平滑 Weiszfeld 迭代生成几何中位数近似。
         return smoothed_weiszfeld(updates, alphas, self.epsilon, self.num_iters)
 
@@ -79,19 +89,25 @@ def smoothed_weiszfeld(updates, alphas, epsilon, num_iters):
         时间复杂度 O(num_iters * n * d)；空间复杂度 O(d)。
     """
     if torch.is_tensor(updates):
-        updates = updates.detach().cpu().numpy()
+        updates = updates.detach()
     elif isinstance(updates, (list, tuple)) and updates:
         if torch.is_tensor(updates[0]):
-            updates = np.stack([u.detach().cpu().numpy() for u in updates], axis=0)
+            updates = torch.stack([u.detach() for u in updates], dim=0)
         else:
-            updates = np.asarray(updates)
+            updates = torch.as_tensor(updates, dtype=torch.float32)
     else:
-        updates = np.asarray(updates)
-    v = np.zeros_like(updates[0], dtype=np.float32)
+        updates = torch.as_tensor(updates, dtype=torch.float32)
+
+    if torch.is_tensor(alphas):
+        alphas = alphas.to(device=updates.device, dtype=updates.dtype)
+    else:
+        alphas = torch.as_tensor(alphas, device=updates.device, dtype=updates.dtype)
+
+    v = torch.zeros_like(updates[0], dtype=updates.dtype, device=updates.device)
     for _ in range(num_iters):
-        denom = np.linalg.norm(updates - v, ord=2, axis=1)
-        betas = alphas / np.maximum(denom, epsilon)
-        v = np.dot(betas, updates) / betas.sum()
+        denom = torch.linalg.norm(updates - v, dim=1)
+        betas = alphas / torch.clamp(denom, min=epsilon)
+        v = torch.matmul(betas, updates) / torch.sum(betas)
     return v
 
 

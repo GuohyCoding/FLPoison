@@ -105,7 +105,7 @@ class PoisonedFL2(MPBase, Client):
             self.local_accuracy = self._eval_global_test_acc()
             self.local_accuracy_history.append(self.local_accuracy)
             sf = self.adaptive_attack_magnitude(1.0, 100.0, sf, 20, 0.2, 0.7, 20)  # 参数
-            self._log_message(f"sf={sf:.3f}")
+            # self._log_message(f"sf={sf:.3f}")
             # self._log_message(f"mutched_filter_score={self.local_mutched_filter_score:.3f}")
          
         self.prev_global_vec = current_global_vec.clone()

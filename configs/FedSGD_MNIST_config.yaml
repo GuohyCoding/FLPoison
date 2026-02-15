@@ -1,7 +1,7 @@
 # This file serves as the configurations for the benchmarking experiments, including the basic configuration and the parameters for all attacks and defenses that are going to be tested. You can copy this file and modify it to run your own single attack and defense experiments.
 seed: 42 # seed for reproducibility
 # basic configuration
-epochs: 2000 # global epochs
+epochs: 1000 # global epochs
 algorithm: FedSGD # algorithm, FedSGD, FedAvg, FedOpt
 optimizer: SGD # optimizer for training
 momentum: 0.9
@@ -23,7 +23,7 @@ num_workers: 0  # 指定数据加载时使用的子进程数量
 record_time: False
 
 # general attack settings
-num_adv: 40 # the proportion (float < 1) or number (int>1) of adversaries
+num_adv: 20 # the proportion (float < 1) or number (int>1) of adversaries
 
 attack: NoAttack
 defense: Mean
