@@ -117,13 +117,15 @@ class FLDetector(AggregatorBase):
             # 使用 Gap Statistic 判断最佳簇数量，若大于等于 2 则执行 KMeans 分离可疑客户端。
             if self.gap_statistics(score, num_sampling=20, K_max=10,
                                    n=self.args.num_clients) >= 2:
-                score_2d = score.reshape(score.shape[0], -1)
-                label_pred, _ = self._kmeans_fit_predict_gpu(
+                use_gpu = self._gpu_kmeans_available()
+                score_for_kmeans = score if use_gpu else score.cpu()
+                score_2d = score_for_kmeans.reshape(score_for_kmeans.shape[0], -1)
+                label_pred, _ = self._kmeans_fit_predict(
                     score_2d, n_clusters=2, n_init=10
                 )
-                # 均值较大的簇视为可疑，剩余索引被视为良性。
-                score0 = torch.mean(score[label_pred == 0])
-                score1 = torch.mean(score[label_pred == 1])
+                # 均值较大的簇视为可疑，其余为良性。
+                score0 = torch.mean(score_for_kmeans[label_pred == 0])
+                score1 = torch.mean(score_for_kmeans[label_pred == 1])
                 benign_label = 1 if score0 > score1 else 0
                 benign_idx = torch.nonzero(
                     label_pred == benign_label, as_tuple=False
@@ -259,6 +261,55 @@ class FLDetector(AggregatorBase):
             ).reshape(())
         return labels, inertia
 
+    def _kmeans_fit_predict_cpu(self, data, n_clusters, n_init=10):
+        """
+        Use scikit-learn KMeans on CPU and return (labels, inertia).
+        """
+        try:
+            from sklearn.cluster import KMeans
+        except Exception as exc:
+            raise RuntimeError(
+                "CPU KMeans requires `scikit-learn`. Please install scikit-learn or RAPIDS for GPU."
+            ) from exc
+
+        if torch.is_tensor(data):
+            data_np = data.detach().cpu().numpy()
+        else:
+            data_np = np.asarray(data, dtype=np.float32)
+        if data_np.ndim == 1:
+            data_np = data_np.reshape(-1, 1)
+
+        estimator = KMeans(n_clusters=n_clusters, n_init=n_init, random_state=0)
+        labels_np = estimator.fit_predict(data_np)
+        inertia_np = estimator.inertia_
+
+        labels = torch.as_tensor(labels_np, dtype=torch.long)
+        inertia = torch.as_tensor(inertia_np, dtype=torch.float32).reshape(())
+        return labels, inertia
+
+    def _gpu_kmeans_available(self):
+        if not torch.cuda.is_available():
+            return False
+        if hasattr(self, "_gpu_kmeans_ok"):
+            return self._gpu_kmeans_ok
+        try:
+            import cupy as cp  # noqa: F401
+            from cuml.cluster import KMeans as cuKMeans  # noqa: F401
+        except Exception:
+            self._gpu_kmeans_ok = False
+        else:
+            self._gpu_kmeans_ok = True
+        return self._gpu_kmeans_ok
+
+    def _kmeans_fit_predict(self, data, n_clusters, n_init=10):
+        if self._gpu_kmeans_available():
+            return self._kmeans_fit_predict_gpu(data, n_clusters=n_clusters, n_init=n_init)
+        if hasattr(self.args, "logger"):
+            self.args.logger.warning(
+                "FLDetector: GPU KMeans unavailable; falling back to CPU KMeans (scikit-learn)."
+            )
+        return self._kmeans_fit_predict_cpu(data, n_clusters=n_clusters, n_init=n_init)
+
     def gap_statistics(self, data, num_sampling, K_max, n):
         """
         计算 Gap Statistic 以估计最佳聚类簇数。
@@ -278,8 +329,13 @@ class FLDetector(AggregatorBase):
         # 数据归一化后避免尺度差异影响聚类。
         if not torch.is_tensor(data):
             data = torch.as_tensor(data, dtype=torch.float32)
-        if not data.is_cuda:
-            data = data.to(device="cuda", non_blocking=True)
+        use_gpu = self._gpu_kmeans_available()
+        if use_gpu:
+            if not data.is_cuda:
+                data = data.to(device="cuda", non_blocking=True)
+        else:
+            if data.is_cuda:
+                data = data.cpu()
         data = normalize_data(data)
         if data.ndim == 1:
             data = data.reshape(-1, 1)
@@ -289,7 +345,7 @@ class FLDetector(AggregatorBase):
 
         for k in range(1, K_max + 1):
             # 真实数据的簇内误差 (inertia)。
-            _, inertia = self._kmeans_fit_predict_gpu(data, n_clusters=k, n_init=10)
+            _, inertia = self._kmeans_fit_predict(data, n_clusters=k, n_init=10)
 
             # 随机数据的簇内误差，用于近似空模型。
             fake_inertia = []
@@ -297,7 +353,7 @@ class FLDetector(AggregatorBase):
                 random_data = torch.rand(
                     (n, data.shape[1]), device=data.device, dtype=data.dtype
                 )
-                _, fake_inertia_k = self._kmeans_fit_predict_gpu(
+                _, fake_inertia_k = self._kmeans_fit_predict(
                     random_data, n_clusters=k, n_init=10
                 )
                 fake_inertia.append(fake_inertia_k)

@@ -86,7 +86,18 @@ def fl_run(args):
     args.logger.info("Starting Training...")
     prev_aggregated_update = None
     low_acc_streak = 0
+    max_runtime_seconds = 120 * 60
     for global_epoch in range(args.epochs):
+        # XXX：超时则退出，避免单个任务运行时间过长
+        if (time.time() - start_time) >= max_runtime_seconds:
+            args.logger.info(
+                "Max runtime reached (120 minutes). Exiting training loop."
+            )
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            gc.collect()
+            break
+
         epoch_msg = f"Epoch {global_epoch:<3}"
         # print(f"Global epoch {global_epoch} begin")
         # server dispatches numpy version global weights 1d vector to clients
@@ -108,6 +119,8 @@ def fl_run(args):
 
         avg_train_loss = avg_value(avg_train_loss)
         avg_train_acc = avg_value(avg_train_acc)
+
+        # XXX：连续低train_acc退出
         if avg_train_acc < 0.18:
             low_acc_streak += 1
         else:
@@ -159,6 +172,7 @@ def fl_run(args):
         if low_acc_streak >= 50:
             epoch_msg += "\nAttack succeeded."
             args.logger.info(epoch_msg)
+            gc.collect()
             break
 
         args.logger.info(epoch_msg)

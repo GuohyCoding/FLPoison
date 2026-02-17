@@ -334,7 +334,7 @@ def single_preprocess(args):
     if args.attack == "PoisonedFL":
         args.num_adv = int(round(args.num_adv * 0.7))
     elif args.attack == "PoisonedFL2":
-        args.num_adv = int(round(args.num_adv * 1.4))
+        args.num_adv = int(round(args.num_adv * 1.5))
     if args.num_adv < 0:
         args.num_adv = 0
     if args.num_adv > args.num_clients:
