@@ -292,3 +292,9 @@ Epoch 279  Train Acc: 0.1963  Train loss: 0.1540  Test Acc: 0.1587	Test loss: 0.
 Epoch 280  Train Acc: 0.1544  Train loss: 0.1564  Test Acc: 0.1243	Test loss: 0.6859
 [Adaptive] System Crashing Triggered (Cos: 0.303, Acc: 0.1243)
 Epoch 281  Train Acc: 0.1319  Train loss: 0.6815  Test Acc: 0.1007	Test loss: 0.7031
+Epoch 282  Train Acc: 0.0931  Train loss: 0.7001  Test Acc: 0.1065	Test loss: 0.8927
+Epoch 283  Train Acc: 0.0931  Train loss: 0.6889  Test Acc: 0.1199	Test loss: 0.2817
+[Adaptive] Attack Sucess (Cos: 0.999, Acc: 0.1199)
+Epoch 284  Train Acc: 0.1163  Train loss: 0.2574  Test Acc: 0.0997	Test loss: 0.7639
+Epoch 285  Train Acc: 0.0944  Train loss: 0.8187  Test Acc: 0.1198	Test loss: 0.6521
+Epoch 286  Train Acc: 0.1231  Train loss: 0.7797  Test Acc: 0.1000	Test loss: 2.0963
