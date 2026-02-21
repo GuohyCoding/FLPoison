@@ -34,7 +34,7 @@ class PoisonedFL2(MPBase, Client):
 
         # Reuse PoisonedFL defaults and extend with new hyper-params.
         self.default_attack_params = {
-            "scaling_factor": 10.0,
+            "scaling_factor": 5.0,
             "early_round": 10,
             "top_k_ratio": 0.05,
             "important_magnitude": 10.0,
@@ -120,9 +120,8 @@ class PoisonedFL2(MPBase, Client):
             return benign_updates
          
         # cos监视并改变攻击状态，从50轮开始
-        self._update_cos_state_and_maybe_reset(50)
-        
         # 再次 warm-up 阶段：这个阶段攻击方向为历史梯度方向的正交方向
+        self._update_cos_state_and_maybe_reset(50)
         if self.force_warmup_rounds > 0 and current_epoch > 50:
             self.force_warmup_rounds -= 1
             self.grad_history.append(current_grad.detach().cpu())

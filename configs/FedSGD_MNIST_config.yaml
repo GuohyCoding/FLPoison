@@ -23,7 +23,7 @@ num_workers: 0  # 指定数据加载时使用的子进程数量
 record_time: False
 
 # general attack settings
-num_adv: 20 # the proportion (float < 1) or number (int>1) of adversaries
+num_adv: 40 # the proportion (float < 1) or number (int>1) of adversaries
 
 attack: NoAttack
 defense: Mean

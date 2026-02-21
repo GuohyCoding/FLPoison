@@ -1,0 +1,9 @@
+seed: 4, epochs: 3000, algorithm: FedSGD, optimizer: SGD, momentum: 0.9, weight_decay: 0.0005, lr_scheduler: MultiStepLR, milestones: [0.5, 0.8], num_clients: 100, batch_size: 16, learning_rate: 0.05, model: lenet, dataset: CIFAR10, distribution: iid, im_iid_gamma: 0.01, tail_cls_from: 4, dirichlet_alpha: 0.5, cache_partition: False, gpu_idx: [0], num_workers: 0, record_time: False, num_adv: 30, attack: PoisonedFL2, defense: Krum, attack_params: None, defense_params: {'enable_check': False}, benchmark: False, num_training_sample: 50000, num_channels: 3, num_classes: 10, mean: (0.4914, 0.4822, 0.4465), std: (0.247, 0.243, 0.261), device: cuda:0, output: ./logs/FedSGD/CIFAR10_lenet/iid/CIFAR10_lenet_iid_PoisonedFL2_Krum_3000_100_0.05_FedSGD.txt
+
+Started on Sat Feb 21 23:18:45 2026
+Generating new indices
+Doing iid partition
+iid partition finished
+Data partitioned
+Clients and server are initialized
+Starting Training...

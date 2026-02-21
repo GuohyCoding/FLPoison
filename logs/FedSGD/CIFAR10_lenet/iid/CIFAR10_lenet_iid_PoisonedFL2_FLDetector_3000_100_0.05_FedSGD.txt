@@ -1,0 +1,118 @@
+seed: 4, epochs: 3000, algorithm: FedSGD, optimizer: SGD, momentum: 0.9, weight_decay: 0.0005, lr_scheduler: MultiStepLR, milestones: [0.5, 0.8], num_clients: 100, batch_size: 16, learning_rate: 0.05, model: lenet, dataset: CIFAR10, distribution: iid, im_iid_gamma: 0.01, tail_cls_from: 4, dirichlet_alpha: 0.5, cache_partition: False, gpu_idx: [0], num_workers: 0, record_time: False, num_adv: 30, attack: PoisonedFL2, defense: FLDetector, attack_params: None, defense_params: None, benchmark: False, num_training_sample: 50000, num_channels: 3, num_classes: 10, mean: (0.4914, 0.4822, 0.4465), std: (0.247, 0.243, 0.261), device: cuda:0, output: ./logs/FedSGD/CIFAR10_lenet/iid/CIFAR10_lenet_iid_PoisonedFL2_FLDetector_3000_100_0.05_FedSGD.txt
+
+Started on Sat Feb 21 20:48:23 2026
+Generating new indices
+Doing iid partition
+iid partition finished
+Data partitioned
+Clients and server are initialized
+Starting Training...
+Epoch 0    Train Acc: 0.1062  Train loss: 0.1440  Test Acc: 0.1000	Test loss: 0.1440
+Epoch 1    Train Acc: 0.0831  Train loss: 0.1441  Test Acc: 0.1000	Test loss: 0.1439
+Epoch 2    Train Acc: 0.0925  Train loss: 0.1440  Test Acc: 0.1000	Test loss: 0.1439
+Epoch 3    Train Acc: 0.0981  Train loss: 0.1439  Test Acc: 0.1000	Test loss: 0.1439
+Epoch 4    Train Acc: 0.0944  Train loss: 0.1439  Test Acc: 0.1001	Test loss: 0.1438
+Epoch 5    Train Acc: 0.1125  Train loss: 0.1437  Test Acc: 0.1007	Test loss: 0.1438
+Epoch 6    Train Acc: 0.1000  Train loss: 0.1438  Test Acc: 0.1023	Test loss: 0.1437
+Epoch 7    Train Acc: 0.1019  Train loss: 0.1438  Test Acc: 0.1050	Test loss: 0.1437
+Epoch 8    Train Acc: 0.1131  Train loss: 0.1436  Test Acc: 0.1120	Test loss: 0.1436
+Epoch 9    Train Acc: 0.1150  Train loss: 0.1437  Test Acc: 0.1098	Test loss: 0.1437
+Epoch 10   Train Acc: 0.1125  Train loss: 0.1436  Test Acc: 0.1084	Test loss: 0.1437
+Epoch 11   Train Acc: 0.1081  Train loss: 0.1438  Test Acc: 0.1073	Test loss: 0.1438
+Epoch 12   Train Acc: 0.1075  Train loss: 0.1437  Test Acc: 0.1072	Test loss: 0.1438
+Epoch 13   Train Acc: 0.1175  Train loss: 0.1438  Test Acc: 0.1063	Test loss: 0.1438
+Epoch 14   Train Acc: 0.1069  Train loss: 0.1439  Test Acc: 0.1077	Test loss: 0.1438
+Epoch 15   Train Acc: 0.0938  Train loss: 0.1439  Test Acc: 0.1067	Test loss: 0.1439
+Epoch 16   Train Acc: 0.1031  Train loss: 0.1439  Test Acc: 0.1115	Test loss: 0.1439
+Epoch 17   Train Acc: 0.1237  Train loss: 0.1438  Test Acc: 0.1122	Test loss: 0.1439
+Epoch 18   Train Acc: 0.0963  Train loss: 0.1440  Test Acc: 0.1072	Test loss: 0.1439
+Epoch 19   Train Acc: 0.1013  Train loss: 0.1440  Test Acc: 0.1006	Test loss: 0.1439
+Epoch 20   Train Acc: 0.1006  Train loss: 0.1438  Test Acc: 0.0977	Test loss: 0.1439
+Epoch 21   Train Acc: 0.1013  Train loss: 0.1439  Test Acc: 0.0958	Test loss: 0.1439
+Epoch 22   Train Acc: 0.0963  Train loss: 0.1440  Test Acc: 0.0952	Test loss: 0.1439
+Epoch 23   Train Acc: 0.0875  Train loss: 0.1440  Test Acc: 0.0938	Test loss: 0.1439
+Epoch 24   Train Acc: 0.0887  Train loss: 0.1439  Test Acc: 0.0945	Test loss: 0.1439
+Epoch 25   Train Acc: 0.0925  Train loss: 0.1440  Test Acc: 0.0952	Test loss: 0.1438
+Epoch 26   Train Acc: 0.1138  Train loss: 0.1438  Test Acc: 0.0957	Test loss: 0.1438
+Epoch 27   Train Acc: 0.0944  Train loss: 0.1437  Test Acc: 0.0982	Test loss: 0.1437
+Epoch 28   Train Acc: 0.0969  Train loss: 0.1436  Test Acc: 0.1003	Test loss: 0.1436
+Epoch 29   Train Acc: 0.1025  Train loss: 0.1436  Test Acc: 0.1040	Test loss: 0.1435
+Epoch 30   Train Acc: 0.0894  Train loss: 0.1479  Test Acc: 0.1103	Test loss: 0.1435
+Epoch 31   Train Acc: 0.1163  Train loss: 0.5708  Test Acc: 0.1151	Test loss: 0.1433
+Epoch 32   Train Acc: 0.1250  Train loss: 0.1433  Test Acc: 0.1224	Test loss: 0.1432
+Epoch 33   Train Acc: 0.1269  Train loss: 0.1432  Test Acc: 0.1317	Test loss: 0.1430
+Epoch 34   Train Acc: 0.1212  Train loss: 0.1432  Test Acc: 0.1415	Test loss: 0.1427
+Epoch 35   Train Acc: 0.1381  Train loss: 0.1427  Test Acc: 0.1515	Test loss: 0.1424
+Epoch 36   Train Acc: 0.1506  Train loss: 0.1424  Test Acc: 0.1609	Test loss: 0.1420
+Epoch 37   Train Acc: 0.1550  Train loss: 0.1417  Test Acc: 0.1673	Test loss: 0.1415
+Epoch 38   Train Acc: 0.1512  Train loss: 0.1415  Test Acc: 0.1733	Test loss: 0.1407
+Epoch 39   Train Acc: 0.1694  Train loss: 0.1406  Test Acc: 0.1728	Test loss: 0.1398
+Epoch 40   Train Acc: 0.1731  Train loss: 0.1394  Test Acc: 0.1708	Test loss: 0.1388
+Epoch 41   Train Acc: 0.1775  Train loss: 0.1375  Test Acc: 0.1683	Test loss: 0.1377
+Epoch 42   Train Acc: 0.1625  Train loss: 0.1380  Test Acc: 0.1827	Test loss: 0.1355
+Epoch 43   Train Acc: 0.1688  Train loss: 0.1352  Test Acc: 0.1883	Test loss: 0.1345
+Epoch 44   Train Acc: 0.1725  Train loss: 0.1357  Test Acc: 0.1943	Test loss: 0.1339
+Epoch 45   Train Acc: 0.1888  Train loss: 0.1335  Test Acc: 0.2196	Test loss: 0.1367
+Epoch 46   Train Acc: 0.2200  Train loss: 0.1352  Test Acc: 0.2000	Test loss: 0.1411
+Epoch 47   Train Acc: 0.2069  Train loss: 0.1401  Test Acc: 0.2110	Test loss: 0.1465
+Epoch 48   Train Acc: 0.2206  Train loss: 0.1434  Test Acc: 0.1672	Test loss: 0.1770
+Epoch 49   Train Acc: 0.1725  Train loss: 0.1703  Test Acc: 0.1556	Test loss: 0.2590
+Epoch 50   Train Acc: 0.1688  Train loss: 0.2521  Test Acc: 0.1000	Test loss: 3.3026
+[Adaptive] System Crashing Triggered (Cos: 0.033, Acc: 0.1)
+Epoch 51   Train Acc: 0.1131  Train loss: 3.2968  Test Acc: 0.0959	Test loss: 546.1224
+Epoch 52   Train Acc: 0.1006  Train loss: 581.6964  Test Acc: 0.1038	Test loss: 4836.9689
+Epoch 53   Train Acc: 0.1044  Train loss: 4880.8379  Test Acc: 0.1032	Test loss: 29773.1886
+[Adaptive] Attack Sucess (Cos: 0.093, Acc: 0.1032)
+Epoch 54   Train Acc: 0.1087  Train loss: 30007.4049  Test Acc: 0.1043	Test loss: 45389.6032
+Epoch 55   Train Acc: 0.0938  Train loss: 45800.3825  Test Acc: 0.0990	Test loss: 102463.3473
+[Adaptive] System Crashing Triggered (Cos: 0.391, Acc: 0.099)
+Epoch 56   Train Acc: 0.0806  Train loss: 103751.4398  Test Acc: 0.1090	Test loss: 58766.9767
+Epoch 57   Train Acc: 0.0906  Train loss: 64103.4930  Test Acc: 0.1172	Test loss: 28362.0326
+Epoch 58   Train Acc: 0.1319  Train loss: 33841.3162  Test Acc: 0.0991	Test loss: 18238.9119
+[Adaptive] Attack Sucess (Cos: 0.928, Acc: 0.0991)
+Epoch 59   Train Acc: 0.0881  Train loss: 27610.1401  Test Acc: 0.0985	Test loss: 37087.2566
+Epoch 60   Train Acc: 0.1000  Train loss: 41600.2362  Test Acc: 0.0941	Test loss: 28893.7928
+Epoch 61   Train Acc: 0.0956  Train loss: 39992.3998  Test Acc: 0.0931	Test loss: 20997.9592
+Epoch 62   Train Acc: 0.0869  Train loss: 11973.8360  Test Acc: 0.1008	Test loss: 20257.7829
+Epoch 63   Train Acc: 0.0856  Train loss: 2292.9327  Test Acc: 0.0997	Test loss: 22075.7139
+Epoch 64   Train Acc: 0.0912  Train loss: 2291.6011  Test Acc: 0.0973	Test loss: 15937.6251
+Epoch 65   Train Acc: 0.1113  Train loss: 10.7417  Test Acc: 0.0989	Test loss: 14643.6623
+Epoch 66   Train Acc: 0.0981  Train loss: 7.2254  Test Acc: 0.1004	Test loss: 15831.3075
+Epoch 67   Train Acc: 0.0944  Train loss: 2.3975  Test Acc: 0.1002	Test loss: 19971.4867
+Epoch 68   Train Acc: 0.1044  Train loss: 98984.0734  Test Acc: 0.1000	Test loss: 1433.3194
+Epoch 69   Train Acc: 0.0875  Train loss: 2.3094  Test Acc: 0.1000	Test loss: 589234.1351
+[Adaptive] System Crashing Triggered (Cos: 0.008, Acc: 0.1)
+Epoch 70   Train Acc: 0.1119  Train loss: 580843.8387  Test Acc: 0.1002	Test loss: 1702.6815
+Epoch 71   Train Acc: 0.0925  Train loss: 2.5422  Test Acc: 0.0741	Test loss: 2756.9852
+Epoch 72   Train Acc: 0.0781  Train loss: 1115.1654  Test Acc: 0.0999	Test loss: 3075.7129
+[Adaptive] Attack Sucess (Cos: 1.000, Acc: 0.0999)
+Epoch 73   Train Acc: 0.1025  Train loss: 9.4736  Test Acc: 0.1000	Test loss: 5487.8871
+Epoch 74   Train Acc: 0.1081  Train loss: 3265.5422  Test Acc: 0.1000	Test loss: 24962.8807
+Epoch 75   Train Acc: 0.1031  Train loss: 47359.2133  Test Acc: 0.0999	Test loss: 201181.0670
+Epoch 76   Train Acc: 0.1000  Train loss: 581392.8375  Test Acc: 0.0990	Test loss: 858540.9959
+Epoch 77   Train Acc: 0.1000  Train loss: 611114.5918  Test Acc: 0.0983	Test loss: 1276166.4658
+Epoch 78   Train Acc: 0.0975  Train loss: 1852605.7168  Test Acc: 0.1027	Test loss: 19290458.9264
+[Adaptive] System Crashing Triggered (Cos: 0.116, Acc: 0.1027)
+Epoch 79   Train Acc: 0.0981  Train loss: 21195738.4050  Test Acc: 0.1007	Test loss: 170685.2546
+Epoch 80   Train Acc: 0.0912  Train loss: 880815.4570  Test Acc: 0.1000	Test loss: 250190.1786
+Epoch 81   Train Acc: 0.1031  Train loss: 420638.6649  Test Acc: 0.1001	Test loss: 93211.8229
+[Adaptive] Attack Sucess (Cos: 1.000, Acc: 0.1001)
+Epoch 82   Train Acc: 0.1006  Train loss: 49706.4970  Test Acc: 0.0989	Test loss: 32327.6609
+Epoch 83   Train Acc: 0.1044  Train loss: 349.7687  Test Acc: 0.1001	Test loss: 39735.4392
+Epoch 84   Train Acc: 0.0956  Train loss: 2936.0811  Test Acc: 0.0999	Test loss: 47022.6431
+Epoch 85   Train Acc: 0.1044  Train loss: 182826.8126  Test Acc: 0.0998	Test loss: 2024.3262
+Epoch 86   Train Acc: 0.0862  Train loss: 59.4103  Test Acc: 0.0996	Test loss: 2436.4722
+Epoch 87   Train Acc: 0.0906  Train loss: 18.0619  Test Acc: 0.0998	Test loss: 2809.0041
+Epoch 88   Train Acc: 0.0950  Train loss: 4.7954  Test Acc: 0.1000	Test loss: 3291.2378
+Epoch 89   Train Acc: 0.1200  Train loss: 6.6108  Test Acc: 0.1001	Test loss: 3807.5698
+Epoch 90   Train Acc: 0.1044  Train loss: 3.5533  Test Acc: 0.1000	Test loss: 4453.7059
+Epoch 91   Train Acc: 0.1037  Train loss: 5.1596  Test Acc: 0.1000	Test loss: 4854.6401
+Epoch 92   Train Acc: 0.0894  Train loss: 3.3227  Test Acc: 0.1000	Test loss: 5154.6557
+Epoch 93   Train Acc: 0.0981  Train loss: 4.4311  Test Acc: 0.1000	Test loss: 5452.0078
+Epoch 94   Train Acc: 0.1087  Train loss: 3.2827  Test Acc: 0.1000	Test loss: 5731.8321
+Epoch 95   Train Acc: 0.1006  Train loss: 34657.3611  Test Acc: 0.1000	Test loss: 3.2838
+Epoch 96   Train Acc: 0.0944  Train loss: 3.2657  Test Acc: 0.1000	Test loss: 9310.2360
+Epoch 97   Train Acc: 0.0963  Train loss: 3.3599  Test Acc: 0.1000	Test loss: 340154.9663
+Epoch 98   Train Acc: 0.1006  Train loss: 549322.4213  Test Acc: 0.0999	Test loss: 1624756.8676
+Attack succeeded.
+Training finished on Sat Feb 21 21:09:42 2026 using 21 minutes and 18 seconds in total.

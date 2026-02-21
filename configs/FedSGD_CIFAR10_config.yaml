@@ -1,17 +1,17 @@
 # This file serves as the configurations for the benchmarking experiments, including the basic configuration and the parameters for all attacks and defenses that are going to be tested. You can copy this file and modify it to run your own single attack and defense experiments.
 seed: 4 # seed for reproducibility
 # basic configuration
-epochs: 300 # global epochs
+epochs: 1000 # global epochs
 algorithm: FedSGD # algorithm, FedSGD, FedAvg, FedOpt
 optimizer: SGD # optimizer for training
 momentum: 0.9
 weight_decay: 5.0e-4
 lr_scheduler: MultiStepLR # learning rate scheduler
 milestones: [0.5, 0.8] # milestones for learning rate scheduler
-num_clients: 20 # number of participating clients
-batch_size: 64 # batch_size
+num_clients: 100 # number of participating clients
+batch_size: 16 # batch_size
 learning_rate: 0.05 # clients' local learning rate
-model: resnet18 # simplecnn # model architecture
+model: lenet # simplecnn # model architecture
 dataset: CIFAR10 # dataset
 distribution: iid # data distribution
 im_iid_gamma: 0.01 # For class-imbalanced iid, smaller gamma, stronger imbalance, 0.5, 0.6 reference: centered clipping
