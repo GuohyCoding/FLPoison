@@ -34,7 +34,7 @@ class PoisonedFL2(MPBase, Client):
 
         # Reuse PoisonedFL defaults and extend with new hyper-params.
         self.default_attack_params = {
-            "scaling_factor": 5.0,
+            "scaling_factor": 10.0,
             "early_round": 10,
             "top_k_ratio": 0.05,
             "important_magnitude": 10.0,
@@ -303,8 +303,10 @@ class PoisonedFL2(MPBase, Client):
             if history_centered.shape[0] == 1:
                 v_pca = history_centered[0]
             else:
-                _, _, v_t = torch.linalg.svd(history_centered, full_matrices=False)
-                v_pca = v_t[0]
+                # Run SVD on CPU to avoid CUDA linalg instability; move result back.
+                history_centered_cpu = history_centered.cpu()
+                _, _, v_t = torch.linalg.svd(history_centered_cpu, full_matrices=False)
+                v_pca = v_t[0].to(current_global_vec.device)
         else:
             v_pca = torch.randn_like(current_global_vec)
         if torch.norm(v_pca) == 0:

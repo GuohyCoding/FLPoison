@@ -86,7 +86,7 @@ def fl_run(args):
     args.logger.info("Starting Training...")
     prev_aggregated_update = None
     low_acc_streak = 0
-    max_runtime_seconds = 120 * 60
+    max_runtime_seconds = 300* 60
     for global_epoch in range(args.epochs):
         epoch_msg = f"Epoch {global_epoch:<3}"
         # print(f"Global epoch {global_epoch} begin")

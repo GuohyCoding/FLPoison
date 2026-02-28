@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 
 import torch
 import numpy as np
@@ -21,18 +21,18 @@ class PoisonedFL(MPBase, Client):
 
     def __init__(self, args, worker_id, train_dataset, test_dataset):
         Client.__init__(self, args, worker_id, train_dataset, test_dataset)
-        # 沿用 MXNet 参考实现的默认放大系数，方便与原结果对齐；脚本参数可覆盖以做消融。
+        # 娌跨敤 MXNet 鍙傝€冨疄鐜扮殑榛樿鏀惧ぇ绯绘暟锛屾柟渚夸笌鍘熺粨鏋滃榻愶紱鑴氭湰鍙傛暟鍙鐩栦互鍋氭秷铻嶃€?
         self.default_attack_params = {"scaling_factor": 10.0}  
         self.update_and_set_attr()
 
         self.current_scaling_factor = float(self.scaling_factor)
-        # 固定随机方向（±1），只在首次调用时生成，保持攻击方向全程一致以稳定扰动。
+        # 鍥哄畾闅忔満鏂瑰悜锛埪?锛夛紝鍙湪棣栨璋冪敤鏃剁敓鎴愶紝淇濇寔鏀诲嚮鏂瑰悜鍏ㄧ▼涓€鑷翠互绋冲畾鎵板姩銆?
         self.fixed_rand = None
-        # 记录初始/上一轮/最近 50 轮的全局模型向量，用于计算残差与漂移对齐度。
+        # 璁板綍鍒濆/涓婁竴杞?鏈€杩?50 杞殑鍏ㄥ眬妯″瀷鍚戦噺锛岀敤浜庤绠楁畫宸笌婕傜Щ瀵归綈搴︺€?
         self.init_model_vec = None
         self.prev_global_vec = None
         self.last_50_global_vec = None
-        # 缓存上一轮的（潜在）恶意梯度，缺失时回退为良性更新，避免无历史信息时的震荡。
+        # 缂撳瓨涓婁竴杞殑锛堟綔鍦級鎭舵剰姊害锛岀己澶辨椂鍥為€€涓鸿壇鎬ф洿鏂帮紝閬垮厤鏃犲巻鍙蹭俊鎭椂鐨勯渿鑽°€?
         self.last_grad_vec = None
 
     def omniscient(self, clients):
@@ -43,7 +43,7 @@ class PoisonedFL(MPBase, Client):
         if not attackers:
             return None
 
-        # 当前废播的全局模型向量，作为本轮计算 residual/漂移的基准。
+        # 褰撳墠搴熸挱鐨勫叏灞€妯″瀷鍚戦噺锛屼綔涓烘湰杞绠?residual/婕傜Щ鐨勫熀鍑嗐€?
         device = self.args.device
         if torch.is_tensor(self.global_weights_vec):
             current_global_vec = self.global_weights_vec.detach().flatten().to(device)
@@ -52,11 +52,11 @@ class PoisonedFL(MPBase, Client):
                 self.global_weights_vec, dtype=torch.float32, device=device
             ).flatten()
 
-        # 首次进入时初始化固定方向与基准快照。
+        # 棣栨杩涘叆鏃跺垵濮嬪寲鍥哄畾鏂瑰悜涓庡熀鍑嗗揩鐓с€?
         if self.fixed_rand is None:
-            # 与 MXNet 版本一致：随机符号向量，sign 保证只有 ±1。
+            # 涓?MXNet 鐗堟湰涓€鑷达細闅忔満绗﹀彿鍚戦噺锛宻ign 淇濊瘉鍙湁 卤1銆?
             self.fixed_rand = torch.sign(torch.randn_like(current_global_vec))
-            # 极小概率出现 0，用 where 转成 以保持符号稳定。
+            # 鏋佸皬姒傜巼鍑虹幇 0锛岀敤 where 杞垚 浠ヤ繚鎸佺鍙风ǔ瀹氥€?
             zero_mask = self.fixed_rand == 0
             if torch.any(zero_mask):
                 self.fixed_rand = torch.where(
@@ -68,19 +68,19 @@ class PoisonedFL(MPBase, Client):
             # XXX
             # self._log_message(f"fixed_rand[:100]={self.fixed_rand[:100].detach().cpu()}")
 
-        # history 为连续两轮全局模型的差值，等价于 MXNet 里的 current_model - last_model。
+        # history 涓鸿繛缁袱杞叏灞€妯″瀷鐨勫樊鍊硷紝绛変环浜?MXNet 閲岀殑 current_model - last_model銆?
         history_vec = None
         if self.prev_global_vec is not None:
             history_vec = (current_global_vec - self.prev_global_vec).unsqueeze(1)
 
-        # XXX：测试
+        # XXX锛氭祴璇?
         # print("prev_global_vec: ", self.prev_global_vec)
         # print("history_vec: ", history_vec)
 
-        # 无论返回与否，都先更新 prev_global，保证下一轮有参照。
+        # 鏃犺杩斿洖涓庡惁锛岄兘鍏堟洿鏂?prev_global锛屼繚璇佷笅涓€杞湁鍙傜収銆?
         self.prev_global_vec = current_global_vec.clone()
 
-        # 缺少历史或上一轮恶意梯度时，先返回良性更新以维持数值稳定。
+        # 缂哄皯鍘嗗彶鎴栦笂涓€杞伓鎰忔搴︽椂锛屽厛杩斿洖鑹€ф洿鏂颁互缁存寔鏁板€肩ǔ瀹氥€?
         if history_vec is None or self.last_grad_vec is None:
             benign_updates = torch.stack(
                 [
@@ -92,7 +92,7 @@ class PoisonedFL(MPBase, Client):
                 dim=0,
             )
             self.last_grad_vec = benign_updates.mean(dim=0)
-            # 同步 50 轮快照，确保自适应缩放基于统一的全局节奏。
+            # 鍚屾 50 杞揩鐓э紝纭繚鑷€傚簲缂╂斁鍩轰簬缁熶竴鐨勫叏灞€鑺傚銆?
             if self.global_epoch % 50 == 0:
                 self.last_50_global_vec = current_global_vec.clone()
             return benign_updates
@@ -104,7 +104,7 @@ class PoisonedFL(MPBase, Client):
         history_norm = torch.norm(history_vec)
         last_grad_norm = torch.norm(self.last_grad_vec)
 
-        # 去掉上一轮梯度方向后得到残差，再按固定符号重新对齐，这对应文里的 fixed direction 投影。
+        # 鍘绘帀涓婁竴杞搴︽柟鍚戝悗寰楀埌娈嬪樊锛屽啀鎸夊浐瀹氱鍙烽噸鏂板榻愶紝杩欏搴旀枃閲岀殑 fixed direction 鎶曞奖銆?
         residual = history_vec.squeeze(1) - self.last_grad_vec * (
             history_norm / (last_grad_norm + eps)
         )
@@ -113,7 +113,7 @@ class PoisonedFL(MPBase, Client):
 
         current_epoch = int(self.global_epoch)
         if current_epoch % 50 == 0:
-            # 每 50 轮检查一次固定方向的对齐度，偏移过大则指数衰减 scaling_factor，防止梯度漂移。
+            # 姣?50 杞鏌ヤ竴娆″浐瀹氭柟鍚戠殑瀵归綈搴︼紝鍋忕Щ杩囧ぇ鍒欐寚鏁拌“鍑?scaling_factor锛岄槻姝㈡搴︽紓绉汇€?
             total_update = current_global_vec - self.last_50_global_vec
             replaced = torch.where(total_update == 0, current_global_vec, total_update)
             current_sign = torch.sign(replaced)
@@ -124,12 +124,12 @@ class PoisonedFL(MPBase, Client):
         else:
             lamda_succ = sf * history_norm
 
-        # 按固定方向生成恶意更新，并复制到所有攻击者，复用了良性 update 的形状以兼容聚合。
+        # 鎸夊浐瀹氭柟鍚戠敓鎴愭伓鎰忔洿鏂帮紝骞跺鍒跺埌鎵€鏈夋敾鍑昏€咃紝澶嶇敤浜嗚壇鎬?update 鐨勫舰鐘朵互鍏煎鑱氬悎銆?
         mal_update = lamda_succ * deviation
         malicious_updates = mal_update.detach().unsqueeze(0).repeat(len(attackers), 1)
 
         # if current_epoch % 20 == 0:
-        #     # XXX:测试
+        #     # XXX:娴嬭瘯
         #     mal_str = np.array2string(
         #         mal_update[:100].detach().cpu().numpy(),
         #         separator=" ",
@@ -155,7 +155,7 @@ class PoisonedFL(MPBase, Client):
         #     self._log_message(f"mal_benign_l2_ratio={ratio}")
         #     self._log_message(f"lamda_succ={lamda_succ}")
 
-        # 持久化状态，下一轮继续基于同一方向与缩放系数迭代。
+        # 鎸佷箙鍖栫姸鎬侊紝涓嬩竴杞户缁熀浜庡悓涓€鏂瑰悜涓庣缉鏀剧郴鏁拌凯浠ｃ€?
         self.current_scaling_factor = sf
         self.last_grad_vec = malicious_updates[0].detach().clone()
         if current_epoch % 50 == 0:
@@ -168,8 +168,7 @@ class PoisonedFL(MPBase, Client):
         if logger is not None:
             logger.info(msg)
         else:
-            print(msg)   
-
+            print(msg)
     @staticmethod
     def _get_thresholds(dim):
         thresholds = {
@@ -177,10 +176,13 @@ class PoisonedFL(MPBase, Client):
             139960: (70288, 70415),
             717924: (359659, 359948),
             145212: (72919, 73049),
-            61706: (31057, 31142),  # lenet MNIST 固定方向维度
+            61706: (31057, 31142),
+            62006: (31157, 31242),
+            11183582: (5594543, 5595682),
         }
         if dim not in thresholds:
             raise NotImplementedError(
                 f"Unsupported fixed_rand dimension {dim} for PoisonedFL thresholds."
             )
         return thresholds[dim]
+

@@ -118,14 +118,14 @@ def get_configs(dataset, algorithm, distribution, defense):
         },
         "CIFAR10": {
             "FedSGD": {
-                "epoch": 3000, "lr": 0.05,
+                "epoch": 10, "lr": 0.05,
                 "non-iid": {
                     "defenses": ["Krum", "MultiKrum", "Bucketing", "Bulyan", "SignGuard", "DnC", "FLAME"],
                     "lr": 0.002
                 }
             },
             "FedOpt": {
-                "epoch": 300, "lr": 0.02,
+                "epoch": 10, "lr": 0.05,
                 "non-iid": {
                     "defenses": ["Krum", "Bucketing"],
                     "lr": 0.002
