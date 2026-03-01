@@ -19,7 +19,7 @@ tail_cls_from: 4 # For class-imbalanced iid, the tail classes start from 4
 dirichlet_alpha: 0.5 # For non-iid, smaller alpha, stronger heterogeneity, normally use 0.1, 0.5, 0.9, 1
 cache_partition: False # whether to cache the partitioned client indices
 gpu_idx: [0] # Indices of GPU
-num_workers: 0
+num_workers: 4
 record_time: False
 
 # general attack settings

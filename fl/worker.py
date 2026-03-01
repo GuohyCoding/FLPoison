@@ -145,7 +145,7 @@ class Worker:
                 - 概念: 交叉熵损失。
                 - 参考书籍: 《Pattern Recognition and Machine Learning》。
         """
-        return torch.nn.CrossEntropyLoss()(y_pred, y_true)
+        return torch.nn.CrossEntropyLoss()(y_pred, y_true.long())
 
     def new_if_given(self, value, default):
         """

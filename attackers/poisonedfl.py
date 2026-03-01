@@ -2,6 +2,8 @@
 
 import torch
 import numpy as np
+import math
+from statistics import NormalDist
 
 from attackers import attacker_registry
 from attackers.pbases.mpbase import MPBase
@@ -180,9 +182,17 @@ class PoisonedFL(MPBase, Client):
             62006: (31157, 31242),
             11183582: (5594543, 5595682),
         }
-        if dim not in thresholds:
-            raise NotImplementedError(
-                f"Unsupported fixed_rand dimension {dim} for PoisonedFL thresholds."
-            )
-        return thresholds[dim]
+        if dim in thresholds:
+            return thresholds[dim]
+
+        # Fallback for unseen model dimensions:
+        # match-count X ~ Binomial(n=dim, p=0.5), then use one-sided
+        # 95%/99% quantiles as adaptive thresholds.
+        n = float(dim)
+        mu = n * 0.5
+        sigma = math.sqrt(n * 0.25)
+        norm = NormalDist()
+        k_95 = int(math.ceil(mu + norm.inv_cdf(0.95) * sigma))
+        k_99 = int(math.ceil(mu + norm.inv_cdf(0.99) * sigma))
+        return k_95, k_99
 
