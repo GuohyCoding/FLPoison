@@ -191,6 +191,16 @@ def get_transform(args):
         train_tran = transforms.Compose(
             [transforms.ToTensor(), transforms.Normalize(mean=args.mean, std=args.std)])
         test_trans = train_tran
+    elif args.dataset == "CHMNIST":
+        # CHMNIST 原始尺寸约为 150x150；simplecnn 仅支持 28/32 输入，因此统一缩放到 32。
+        if args.model == "simplecnn":
+            args.num_dims = 32
+        train_tran = transforms.Compose([
+            transforms.Resize((args.num_dims, args.num_dims)),
+            transforms.ToTensor(),
+            transforms.Normalize(args.mean, args.std)
+        ])
+        test_trans = train_tran
     elif args.dataset in ["CIFAR10", "CIFAR100", "TinyImageNet"]:
         args.num_dims = 32 if args.dataset in ['CIFAR10', 'CIFAR100'] else 64
         # data augmentation
@@ -420,15 +430,24 @@ class Partition(Dataset):
         self.dataset = dataset
         self.classes = dataset.classes
         self.indices = indices if indices is not None else range(len(dataset))
-        self.data, self.targets = dataset.data[self.indices], dataset.targets[self.indices]
-        # (N, C, H, W) or (N, H, W) for MNIST-like grey images, mode='L'; CIFAR10-like color images, mode='RGB'
-        self.mode = 'L' if len(self.data.shape) == 3 else 'RGB'
+        self.data = None
+        self.targets = dataset.targets[self.indices]
+        # 优先走老路径（依赖 dataset.data 的 torchvision 风格数据集）。
+        # 对 CHMNIST 这类只有 __getitem__ 的数据集，退化为按原始索引取样。
+        if hasattr(dataset, "data"):
+            self.data = dataset.data[self.indices]
+            # (N, C, H, W) or (N, H, W) for MNIST-like grey images, mode='L'; CIFAR10-like color images, mode='RGB'
+            self.mode = 'L' if len(self.data.shape) == 3 else 'RGB'
+        else:
+            self.mode = None
         self.transform = transform
         self.poison = False
 
     def __len__(self):
         """返回当前分片中样本数量。"""
-        return len(self.data)
+        if self.data is not None:
+            return len(self.data)
+        return len(self.indices)
 
     def __getitem__(self, idx):
         """按索引返回（可选后门注入后的）图像与标签。
@@ -449,17 +468,25 @@ class Partition(Dataset):
                 4. 若启用后门，则调用合成器修改图像/标签。
                 5. 返回处理后的数据。
         """
-        image, target = self.data[idx], self.targets[idx]
+        if self.data is not None:
+            image, target = self.data[idx], self.targets[idx]
+            # doing this so that it is consistent with all other datasets
+            # convert image to numpy array. for MNIST-like dataset, image is torch tensor, for CIFAR10-like dataset, image type is numpy array.
+            if not isinstance(image, (np.ndarray, np.generic)):
+                image = image.numpy()
+            # to return a PIL Image
+            image = Image.fromarray(image, mode=self.mode)
+            if self.transform:
+                image = self.transform(image)
+        else:
+            source_idx = self.indices[idx]
+            source_idx = int(source_idx.item()) if torch.is_tensor(source_idx) else int(source_idx)
+            image, target = self.dataset[source_idx]
+            # 底层数据集未应用 transform 时，再补一次变换。
+            if self.transform and isinstance(image, Image.Image):
+                image = self.transform(image)
 
-        # doing this so that it is consistent with all other datasets
-        # convert image to numpy array. for MNIST-like dataset, image is torch tensor, for CIFAR10-like dataset, image type is numpy array.
-        if not isinstance(image, (np.ndarray, np.generic)):
-            image = image.numpy()
-        # to return a PIL Image
-        image = Image.fromarray(image, mode=self.mode)
-        if self.transform:
-            image = self.transform(image)
-
+        target = torch.as_tensor(target)
         if self.poison:
             image, target = self.synthesizer.backdoor_batch(
                 image, target.reshape(-1, 1))
