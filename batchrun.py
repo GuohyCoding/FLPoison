@@ -113,7 +113,7 @@ def get_configs(dataset, algorithm, distribution, defense):
     """
     params = {
         "MNIST": {
-            "FedSGD": {"epoch": 3000, "lr": 0.05},
+            "FedSGD": {"epoch": 1000, "lr": 0.05},
             "FedOpt": {"epoch": 100, "lr": 0.01}
         },
         "CIFAR10": {
@@ -132,8 +132,24 @@ def get_configs(dataset, algorithm, distribution, defense):
                 }
             }
         },
+        "CIFAR100": {
+            "FedSGD": {
+                "epoch": 4000, "lr": 0.05,
+                "non-iid": {
+                    "defenses": ["Krum", "MultiKrum", "Bucketing", "Bulyan", "SignGuard", "DnC", "FLAME"],
+                    "lr": 0.002
+                }
+            },
+            "FedOpt": {
+                "epoch": 3000, "lr": 0.05,
+                "non-iid": {
+                    "defenses": ["Krum", "Bucketing"],
+                    "lr": 0.002
+                }
+            }
+        },
         "CINIC10": {
-            "FedSGD": {"epoch": 2000, "lr": 0.05}
+            "FedSGD": {"epoch": 1000, "lr": 0.05}
         },
         "TinyImageNet": {
             "FedSGD": {"epoch": 150, "lr": 0.05}

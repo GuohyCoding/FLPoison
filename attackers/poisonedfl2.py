@@ -34,7 +34,7 @@ class PoisonedFL2(MPBase, Client):
 
         # Reuse PoisonedFL defaults and extend with new hyper-params.
         self.default_attack_params = {
-            "scaling_factor": 20.0,
+            "scaling_factor": 8.0,
             "early_round": 10,
             "top_k_ratio": 0.05,
             "important_magnitude": 10.0,
@@ -119,17 +119,17 @@ class PoisonedFL2(MPBase, Client):
             benign_updates = self._collect_benign_updates(attackers)
             return benign_updates
          
-        # # cos监视并改变攻击状态，从50轮开始
-        # # 再次 warm-up 阶段：这个阶段攻击方向为历史梯度方向的正交方向
-        # self._update_cos_state_and_maybe_reset(50)
-        # if self.force_warmup_rounds > 0 and current_epoch > 50:
-        #     self.force_warmup_rounds -= 1
-        #     self.grad_history.append(current_grad.detach().cpu())
-        #     # 强制 warm-up 结束后，重置攻击方向
-        #     if self.force_warmup_rounds == 0 and self.attack_state == "recovering":
-        #         self.attack_state = "stable"
-        #         self.current_scaling_factor = float(self.scaling_factor)
-        #         self.fixed_rand = None
+        # cos监视并改变攻击状态，从50轮开始
+        # 再次 warm-up 阶段：这个阶段攻击方向为历史梯度方向的正交方向
+        self._update_cos_state_and_maybe_reset(50)
+        if self.force_warmup_rounds > 0 and current_epoch > 50:
+            self.force_warmup_rounds -= 1
+            self.grad_history.append(current_grad.detach().cpu())
+            # 强制 warm-up 结束后，重置攻击方向
+            if self.force_warmup_rounds == 0 and self.attack_state == "recovering":
+                self.attack_state = "stable"
+                self.current_scaling_factor = float(self.scaling_factor)
+                self.fixed_rand = None
 
          # warm-up 阶段锁定方向：结束 warm-up 后，只要 fixed_rand 为空就重新锁定方向
         if self.fixed_rand is None:

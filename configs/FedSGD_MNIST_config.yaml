@@ -16,14 +16,14 @@ dataset: MNIST # dataset
 distribution: iid # data distribution
 im_iid_gamma: 0.01 # For class-imbalanced iid, smaller gamma, stronger imbalance, 0.5, 0.6 reference: centered clipping
 tail_cls_from: 4 # For class-imbalanced iid, the tail classes start from 4
-dirichlet_alpha: 0.5 # For non-iid, smaller alpha, stronger heterogeneity, normally use 0.1, 0.5, 0.9, 1
+dirichlet_alpha: 1.0 # For non-iid, smaller alpha, stronger heterogeneity, normally use 0.1, 0.5, 0.9, 1
 cache_partition: False # whether to cache the partitioned client indices
-gpu_idx: [1] # Indices of GPU
+gpu_idx: [0] # Indices of GPU
 num_workers: 0  # 指定数据加载时使用的子进程数量
 record_time: False
 
 # general attack settings
-num_adv: 40 # the proportion (float < 1) or number (int>1) of adversaries
+num_adv: 0.10 # the proportion (float < 1) or number (int>1) of adversaries
 
 attack: NoAttack
 defense: Mean
