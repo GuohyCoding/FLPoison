@@ -116,16 +116,20 @@ def get_configs(dataset, algorithm, distribution, defense):
             "FedSGD": {"epoch": 1000, "lr": 0.05},
             "FedOpt": {"epoch": 100, "lr": 0.01}
         },
+        "FashionMNIST": {
+            "FedSGD": {"epoch": 1000, "lr": 0.05},
+            "FedOpt": {"epoch": 100, "lr": 0.01}
+        },
         "CIFAR10": {
             "FedSGD": {
-                "epoch": 4000, "lr": 0.05,
+                "epoch": 300, "lr": 0.05,
                 "non-iid": {
                     "defenses": ["Krum", "MultiKrum", "Bucketing", "Bulyan", "SignGuard", "DnC", "FLAME"],
                     "lr": 0.002
                 }
             },
             "FedOpt": {
-                "epoch": 3000, "lr": 0.05,
+                "epoch": 300, "lr": 0.02,
                 "non-iid": {
                     "defenses": ["Krum", "Bucketing"],
                     "lr": 0.002
@@ -134,33 +138,23 @@ def get_configs(dataset, algorithm, distribution, defense):
         },
         "CIFAR100": {
             "FedSGD": {
-                "epoch": 4000, "lr": 0.05,
+                "epoch": 300, "lr": 0.05,
                 "non-iid": {
                     "defenses": ["Krum", "MultiKrum", "Bucketing", "Bulyan", "SignGuard", "DnC", "FLAME"],
                     "lr": 0.002
                 }
-            },
-            "FedOpt": {
-                "epoch": 3000, "lr": 0.05,
-                "non-iid": {
-                    "defenses": ["Krum", "Bucketing"],
-                    "lr": 0.002
-                }
             }
-        },
-        "CINIC10": {
-            "FedSGD": {"epoch": 1000, "lr": 0.05}
         },
         "TinyImageNet": {
             "FedSGD": {"epoch": 150, "lr": 0.05}
         },
         "CHMNIST": {
-            "FedSGD": {"epoch": 2000, "lr": 0.05}
+            "FedSGD": {"epoch": 150, "lr": 0.001}
         },
     }
 
     dataset_params = params.get(dataset, {})
-    num_clients = 20 if dataset == "CIFAR10" else 50
+    num_clients = 20 if dataset in ["CIFAR10", "CIFAR100"] else 50
     algo_params = dataset_params.get(algorithm, {})
 
     if isinstance(algo_params, dict):

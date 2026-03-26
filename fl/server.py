@@ -225,13 +225,13 @@ class Server(Worker):
                 self.aggregated_update, device=self.global_weights_vec.device
             )
 
-        # 增加L2 clip防止梯度爆炸
-        max_norm = 100.0
-        update_norm = torch.linalg.norm(self.aggregated_update)
-        if update_norm > max_norm:
-            self.aggregated_update = self.aggregated_update * (
-                max_norm / (update_norm + 1e-12)
-            )
+        # # 增加L2 clip防止梯度爆炸
+        # max_norm = 100.0
+        # update_norm = torch.linalg.norm(self.aggregated_update)
+        # if update_norm > max_norm:
+        #     self.aggregated_update = self.aggregated_update * (
+        #         max_norm / (update_norm + 1e-12)
+        #     )
 
     def update_global(self):
         """

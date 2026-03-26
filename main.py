@@ -86,6 +86,7 @@ def fl_run(args):
     args.logger.info("Starting Training...")
     prev_aggregated_update = None
     low_acc_streak = 0
+    # XXX:设置最大运行时间，避免单次实验过长（如攻击未成功导致持续训练）。此处设置为 300 分钟（5 小时）。
     max_runtime_seconds = 300 * 60
     for global_epoch in range(args.epochs):
         epoch_msg = f"Epoch {global_epoch:<3}"
@@ -159,13 +160,13 @@ def fl_run(args):
         epoch_msg += "\t".join(
             [f"{key}: {value:.4f}" for key, value in test_stats.items()])
         
+        # XX：提前终止
         if low_acc_streak >= 50:
             epoch_msg += "\nAttack succeeded."
             args.logger.info(epoch_msg)
             gc.collect()
             break
 
-        # XXX：超时则退出，避免单个任务运行时间过长
         if (time.time() - start_time) >= max_runtime_seconds:
             epoch_msg += "\nMax runtime reached. Exiting training loop."
             args.logger.info(epoch_msg)
@@ -327,7 +328,7 @@ def main(args, cli_args):
     if cli_args.benchmark:
         benchmark_preprocess(args)
         
-        # XXX: 若任务已完成则跳过
+        # XXX: 若任务已完成则跳过（存在png文件）
         png_path = Path(args.output).with_suffix(".png")
         if png_path.exists():
             print(f"PNG {png_path.name} exists, skip")

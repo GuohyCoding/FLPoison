@@ -34,11 +34,11 @@ class PoisonedFL2(MPBase, Client):
 
         # Reuse PoisonedFL defaults and extend with new hyper-params.
         self.default_attack_params = {
-            "scaling_factor": 8.0,
+            "scaling_factor": 3.0,
             "early_round": 10,
             "top_k_ratio": 0.05,
-            "important_magnitude": 10.0,
-            "unimportant_magnitude": 0.1,
+            "important_magnitude": 3.0,
+            "unimportant_magnitude": 0.6,
             "cos_monitor_start_round": 50,
             "recovery_window": 10,
             "threshold": 20, 
