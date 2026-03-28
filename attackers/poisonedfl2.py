@@ -34,11 +34,11 @@ class PoisonedFL2(MPBase, Client):
 
         # Reuse PoisonedFL defaults and extend with new hyper-params.
         self.default_attack_params = {
-            "scaling_factor": 10.0,
+            "scaling_factor": 3.0,
             "early_round": 10,
             "top_k_ratio": 0.05,
-            "important_magnitude": 10.0,
-            "unimportant_magnitude": 0.1,
+            "important_magnitude": 3.0,
+            "unimportant_magnitude": 0.6,
             "cos_monitor_start_round": 50,
             "recovery_window": 10,
             "threshold": 20, 
@@ -120,9 +120,8 @@ class PoisonedFL2(MPBase, Client):
             return benign_updates
          
         # cos监视并改变攻击状态，从50轮开始
-        self._update_cos_state_and_maybe_reset(50)
-        
         # 再次 warm-up 阶段：这个阶段攻击方向为历史梯度方向的正交方向
+        self._update_cos_state_and_maybe_reset(50)
         if self.force_warmup_rounds > 0 and current_epoch > 50:
             self.force_warmup_rounds -= 1
             self.grad_history.append(current_grad.detach().cpu())
@@ -304,8 +303,10 @@ class PoisonedFL2(MPBase, Client):
             if history_centered.shape[0] == 1:
                 v_pca = history_centered[0]
             else:
-                _, _, v_t = torch.linalg.svd(history_centered, full_matrices=False)
-                v_pca = v_t[0]
+                # Run SVD on CPU to avoid CUDA linalg instability; move result back.
+                history_centered_cpu = history_centered.cpu()
+                _, _, v_t = torch.linalg.svd(history_centered_cpu, full_matrices=False)
+                v_pca = v_t[0].to(current_global_vec.device)
         else:
             v_pca = torch.randn_like(current_global_vec)
         if torch.norm(v_pca) == 0:

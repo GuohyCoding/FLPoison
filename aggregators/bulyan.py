@@ -79,6 +79,7 @@ class Bulyan(AggregatorBase):
 
         # 1. 利用 Krum 迭代选择候选集合
         set_size = self.args.num_clients - 2 * self.args.num_adv
+        set_size = max(1, min(len(updates), set_size))
         selected_idx = []
         if torch.is_tensor(updates):
             available = torch.arange(len(updates), device=updates.device)
@@ -120,7 +121,17 @@ class Bulyan(AggregatorBase):
             selected_idx = np.array(selected_idx, dtype=np.int64)
 
         # 若 beta 等于客户端总数或候选数量，直接使用候选集合。
-        if self.beta == self.args.num_clients or self.beta == len(selected_idx):
+        if len(selected_idx) == 0:
+            if torch.is_tensor(updates):
+                selected_idx = torch.arange(
+                    min(1, len(updates)), device=updates.device, dtype=torch.long
+                )
+            else:
+                selected_idx = np.arange(min(1, len(updates)), dtype=np.int64)
+
+        effective_beta = max(1, min(self.beta, len(selected_idx)))
+
+        if effective_beta == self.args.num_clients or effective_beta == len(selected_idx):
             bening_updates = updates[selected_idx]
         else:
             # 2. 在候选集合上执行坐标级 beta-closest-median 筛选
@@ -129,7 +140,7 @@ class Bulyan(AggregatorBase):
                 median = torch.median(updates[selected_idx], dim=0).values
                 abs_dist = torch.abs(updates[selected_idx] - median)
                 _, beta_idx = torch.topk(
-                    abs_dist, self.beta, dim=0, largest=False
+                    abs_dist, effective_beta, dim=0, largest=False
                 )
                 bening_updates = torch.gather(
                     updates[selected_idx], dim=0, index=beta_idx
@@ -139,7 +150,7 @@ class Bulyan(AggregatorBase):
                 abs_dist = np.abs(updates[selected_idx] - median)
                 # 对每个坐标选取与中位数距离最小的 beta 个元素。
                 beta_idx = np.argpartition(
-                    abs_dist, self.beta, axis=0)[:self.beta]
+                    abs_dist, effective_beta, axis=0)[:effective_beta]
                 bening_updates = np.take_along_axis(
                     updates[selected_idx], beta_idx, axis=0)
         # 对筛选后的更新取均值，得到最终聚合结果。

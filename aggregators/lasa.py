@@ -53,6 +53,8 @@ class LASA(AggregatorBase):
         key_mean_weight = {}
         for key in dict_form_updates[0].keys():
             if 'num_batches_tracked' in key:
+                # Keep BN tracking buffers to preserve vector length; update is zero.
+                key_mean_weight[key] = torch.zeros_like(dict_form_updates[0][key])
                 continue
 
             key_flattened_updates = torch.stack([

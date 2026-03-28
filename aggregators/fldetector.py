@@ -130,8 +130,7 @@ class FLDetector(AggregatorBase):
                 benign_idx = torch.nonzero(
                     label_pred == benign_label, as_tuple=False
                 ).reshape(-1).to(device=gradient_updates.device, dtype=torch.long)
-                self.args.logger.info(
-                    f"FLDetector Defense: Benign idx: {benign_idx}")
+                # Optional debug logging removed to reduce log noise.
 
         # 对被判定为良性的客户端梯度求均值，作为当前轮次聚合结果。
         benign_idx = benign_idx.to(device=gradient_updates.device, dtype=torch.long)
@@ -208,7 +207,12 @@ class FLDetector(AggregatorBase):
         upper_mat = torch.cat([sigma_k * S_k_time_S_k, L_k], dim=1)
         lower_mat = torch.cat([L_k.T, -torch.diag(D_k_diag)], dim=1)
         mat = torch.cat([upper_mat, lower_mat], dim=0)
-        mat_inv = torch.linalg.inv(mat)
+        try:
+            mat_inv = torch.linalg.inv(mat)
+        except Exception:
+            # Fallback for singular/ill-conditioned matrix: add damping.
+            eps = torch.tensor(1e-6, device=mat.device, dtype=mat.dtype)
+            mat_inv = torch.linalg.inv(mat + eps * torch.eye(mat.shape[0], device=mat.device, dtype=mat.dtype))
 
         approx_prod = sigma_k * v
         p_mat = torch.cat([torch.matmul(curr_S_k.T, sigma_k * v),
@@ -304,10 +308,6 @@ class FLDetector(AggregatorBase):
     def _kmeans_fit_predict(self, data, n_clusters, n_init=10):
         if self._gpu_kmeans_available():
             return self._kmeans_fit_predict_gpu(data, n_clusters=n_clusters, n_init=n_init)
-        if hasattr(self.args, "logger"):
-            self.args.logger.warning(
-                "FLDetector: GPU KMeans unavailable; falling back to CPU KMeans (scikit-learn)."
-            )
         return self._kmeans_fit_predict_cpu(data, n_clusters=n_clusters, n_init=n_init)
 
     def gap_statistics(self, data, num_sampling, K_max, n):

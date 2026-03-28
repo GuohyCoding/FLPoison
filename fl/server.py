@@ -170,9 +170,15 @@ class Server(Worker):
         for client in self.clients:
             upd = client.update
             if torch.is_tensor(upd):
-                updates.append(upd.to(device=device))
+                upd = upd.to(device=device).reshape(-1)
             else:
-                updates.append(torch.as_tensor(upd, device=device))
+                upd = torch.as_tensor(upd, device=device).reshape(-1)
+            if upd.numel() != self.global_weights_vec.numel():
+                raise RuntimeError(
+                    f"Client {client.worker_id} update length {upd.numel()} "
+                    f"!= global length {self.global_weights_vec.numel()}"
+                )
+            updates.append(upd)
         self.client_updates = torch.stack(updates, dim=0) if updates else torch.empty((0, 0), device=device)
 
     def aggregation(self):
@@ -219,13 +225,13 @@ class Server(Worker):
                 self.aggregated_update, device=self.global_weights_vec.device
             )
 
-        # 增加L2 clip防止梯度爆炸
-        max_norm = 100.0
-        update_norm = torch.linalg.norm(self.aggregated_update)
-        if update_norm > max_norm:
-            self.aggregated_update = self.aggregated_update * (
-                max_norm / (update_norm + 1e-12)
-            )
+        # # 增加L2 clip防止梯度爆炸
+        # max_norm = 100.0
+        # update_norm = torch.linalg.norm(self.aggregated_update)
+        # if update_norm > max_norm:
+        #     self.aggregated_update = self.aggregated_update * (
+        #         max_norm / (update_norm + 1e-12)
+        #     )
 
     def update_global(self):
         """

@@ -81,7 +81,7 @@ def read_args():
                         help='local global_epoch')
     parser.add_argument('-model', '--model', choices=all_models)
     parser.add_argument('-data', '--dataset',
-                        choices=['MNIST', 'FashionMNIST', 'CIFAR10', 'CINIC10', 'CIFAR100', 'EMNIST'])
+                        choices=['MNIST', 'FashionMNIST', 'CIFAR10', 'CINIC10', 'CIFAR100', 'EMNIST', 'CHMNIST'])
     parser.add_argument('-dtb', '--distribution',
                         choices=['iid', 'class-imbalanced_iid', 'non-iid', 'pat', 'imbalanced_pat'])
     parser.add_argument('-dirichlet_alpha', '--dirichlet_alpha', type=float,
@@ -329,16 +329,6 @@ def single_preprocess(args):
     print(f"Using device: {device}")
     args.device = device
     args.num_adv = frac_or_int_to_int(args.num_adv, args.num_clients)
-
-    # XXX： 注意修改！！！
-    if args.attack == "PoisonedFL":
-        args.num_adv = int(round(args.num_adv * 0.7))
-    elif args.attack == "PoisonedFL2":
-        args.num_adv = int(round(args.num_adv * 1.5))
-    if args.num_adv < 0:
-        args.num_adv = 0
-    if args.num_adv > args.num_clients:
-        args.num_adv = args.num_clients
 
     # ensure attack_params and defense_params attributes exist. when there is no params, set it to None.
     ensure_attr(args, 'attack_params')

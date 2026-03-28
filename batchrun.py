@@ -113,7 +113,11 @@ def get_configs(dataset, algorithm, distribution, defense):
     """
     params = {
         "MNIST": {
-            "FedSGD": {"epoch": 4000, "lr": 0.01},
+            "FedSGD": {"epoch": 1000, "lr": 0.05},
+            "FedOpt": {"epoch": 100, "lr": 0.01}
+        },
+        "FashionMNIST": {
+            "FedSGD": {"epoch": 1000, "lr": 0.05},
             "FedOpt": {"epoch": 100, "lr": 0.01}
         },
         "CIFAR10": {
@@ -132,6 +136,15 @@ def get_configs(dataset, algorithm, distribution, defense):
                 }
             }
         },
+        "CIFAR100": {
+            "FedSGD": {
+                "epoch": 300, "lr": 0.05,
+                "non-iid": {
+                    "defenses": ["Krum", "MultiKrum", "Bucketing", "Bulyan", "SignGuard", "DnC", "FLAME"],
+                    "lr": 0.002
+                }
+            }
+        },
         "TinyImageNet": {
             "FedSGD": {"epoch": 150, "lr": 0.05}
         },
@@ -144,7 +157,7 @@ def get_configs(dataset, algorithm, distribution, defense):
     }
 
     dataset_params = params.get(dataset, {})
-    num_clients = 20 if dataset == "CIFAR10" else 50
+    num_clients = 20 if dataset in ["CIFAR10", "CIFAR100"] else 50
     algo_params = dataset_params.get(algorithm, {})
 
     if isinstance(algo_params, dict):
