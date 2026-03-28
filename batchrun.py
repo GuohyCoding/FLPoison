@@ -135,6 +135,9 @@ def get_configs(dataset, algorithm, distribution, defense):
         "TinyImageNet": {
             "FedSGD": {"epoch": 150, "lr": 0.05}
         },
+        "FashionMNIST": {
+            "FedSGD": {"epoch": 1000, "lr": 0.05}
+        },
         "CHMNIST": {
             "FedSGD": {"epoch": 150, "lr": 0.001}
         },
