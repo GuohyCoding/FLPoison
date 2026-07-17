@@ -59,9 +59,12 @@ class Krum(AggregatorBase):
         复杂度:
             时间复杂度 O(n^2 * d)，空间复杂度 O(n^2)，n 为客户端数，d 为向量维度。
         """
+        # 启用客户端采样时每轮参与者数量变化，按恶意比例折算当轮拜占庭上界 f_t；
+        # 全员参与时 f_t == args.num_adv，行为不变
+        _, f_t = self.effective_n_f(updates)
         return krum(
             updates,
-            self.args.num_adv,
+            f_t,
             return_index=False,
             enable_check=self.enable_check,
         )

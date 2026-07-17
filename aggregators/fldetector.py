@@ -96,16 +96,29 @@ class FLDetector(AggregatorBase):
             gradient_updates = torch.as_tensor(
                 gradient_updates, device=model_device, dtype=torch.float32
             )
+        # Keep gradients finite to avoid downstream numeric crashes.
+        gradient_updates = torch.nan_to_num(
+            gradient_updates, nan=0.0, posinf=1e6, neginf=-1e6
+        )
         benign_idx = torch.arange(
             gradient_updates.shape[0], device=gradient_updates.device
         )
 
         # 当历史记录充足时，利用 LBFGS 预测梯度并计算每个客户端的偏差得分。
         if self.current_epoch - self.start_epoch > self.window_size:
-            hvp = self.LBFGS(self.global_weight_diffs, self.global_grad_diffs,
-                             self.last_global_grad)
+            try:
+                hvp = self.LBFGS(
+                    self.global_weight_diffs, self.global_grad_diffs, self.last_global_grad
+                )
+            except Exception:
+                # Never interrupt training because of ill-conditioned LBFGS system.
+                if torch.is_tensor(self.last_global_grad):
+                    hvp = torch.zeros_like(self.last_global_grad)
+                else:
+                    hvp = torch.zeros_like(gradient_updates[0])
             distance = self.get_pred_real_dists(
                 self.last_grad_updates, gradient_updates, hvp)
+            distance = torch.nan_to_num(distance, nan=0.0, posinf=1.0, neginf=0.0)
             self.malicious_score.append(distance)
 
         # 当恶意评分历史长度达到窗口规模时进行聚类检测。
@@ -113,29 +126,55 @@ class FLDetector(AggregatorBase):
             malicious_score = torch.stack(
                 self.malicious_score[-self.window_size:], dim=0)
             score = torch.mean(malicious_score, dim=0)
+            score = torch.nan_to_num(score, nan=0.0, posinf=1.0, neginf=0.0)
 
             # 使用 Gap Statistic 判断最佳簇数量，若大于等于 2 则执行 KMeans 分离可疑客户端。
-            if self.gap_statistics(score, num_sampling=20, K_max=10,
-                                   n=self.args.num_clients) >= 2:
+            should_cluster = False
+            try:
+                should_cluster = self.gap_statistics(
+                    score, num_sampling=20, K_max=10, n=self.args.num_clients
+                ) >= 2
+            except Exception:
+                should_cluster = False
+
+            if should_cluster:
                 use_gpu = self._gpu_kmeans_available()
                 score_for_kmeans = score if use_gpu else score.cpu()
                 score_2d = score_for_kmeans.reshape(score_for_kmeans.shape[0], -1)
-                label_pred, _ = self._kmeans_fit_predict(
-                    score_2d, n_clusters=2, n_init=10
-                )
-                # 均值较大的簇视为可疑，其余为良性。
-                score0 = torch.mean(score_for_kmeans[label_pred == 0])
-                score1 = torch.mean(score_for_kmeans[label_pred == 1])
-                benign_label = 1 if score0 > score1 else 0
-                benign_idx = torch.nonzero(
-                    label_pred == benign_label, as_tuple=False
-                ).reshape(-1).to(device=gradient_updates.device, dtype=torch.long)
-                # Optional debug logging removed to reduce log noise.
+                try:
+                    label_pred, _ = self._kmeans_fit_predict(
+                        score_2d, n_clusters=2, n_init=10
+                    )
+                    # 均值较大的簇视为可疑，其余为良性。
+                    mask0 = (label_pred == 0)
+                    mask1 = (label_pred == 1)
+                    score0 = torch.mean(score_for_kmeans[mask0]) if torch.any(mask0) else torch.tensor(
+                        float("inf"), device=score_for_kmeans.device, dtype=score_for_kmeans.dtype
+                    )
+                    score1 = torch.mean(score_for_kmeans[mask1]) if torch.any(mask1) else torch.tensor(
+                        float("inf"), device=score_for_kmeans.device, dtype=score_for_kmeans.dtype
+                    )
+                    benign_label = 1 if score0 > score1 else 0
+                    benign_idx = torch.nonzero(
+                        label_pred == benign_label, as_tuple=False
+                    ).reshape(-1).to(device=gradient_updates.device, dtype=torch.long)
+                    # Optional debug logging removed to reduce log noise.
+                except Exception:
+                    benign_idx = torch.arange(
+                        gradient_updates.shape[0], device=gradient_updates.device, dtype=torch.long
+                    )
 
         # 对被判定为良性的客户端梯度求均值，作为当前轮次聚合结果。
+        if benign_idx.numel() == 0:
+            benign_idx = torch.arange(
+                gradient_updates.shape[0], device=gradient_updates.device, dtype=torch.long
+            )
         benign_idx = benign_idx.to(device=gradient_updates.device, dtype=torch.long)
         agg_grad_update = torch.mean(
             gradient_updates.index_select(0, benign_idx), dim=0
+        )
+        agg_grad_update = torch.nan_to_num(
+            agg_grad_update, nan=0.0, posinf=1e6, neginf=-1e6
         )
 
         # 更新滑动窗口：记录聚合梯度与梯度差分，维持 window_size 长度。
@@ -170,7 +209,12 @@ class FLDetector(AggregatorBase):
         pred_grad = last_grad_updates + hvp
         distance = torch.linalg.norm(pred_grad - gradient_updates, dim=1)
         # 归一化便于跨轮次比较。
-        distance = distance / (torch.sum(distance) + 1e-12)
+        distance = torch.nan_to_num(distance, nan=0.0, posinf=1e12, neginf=0.0)
+        denom = torch.sum(distance)
+        if (not torch.isfinite(denom)) or denom <= 0:
+            return torch.zeros_like(distance)
+        distance = distance / (denom + 1e-12)
+        distance = torch.nan_to_num(distance, nan=0.0, posinf=1.0, neginf=0.0)
         return distance
 
     def LBFGS(self, S_k_list, Y_k_list, v):
@@ -188,6 +232,9 @@ class FLDetector(AggregatorBase):
         复杂度:
             时间复杂度约 O(m^2 d)，m 为窗口长度；空间复杂度 O(m d)。
         """
+        if len(S_k_list) == 0 or len(Y_k_list) == 0:
+            return torch.zeros_like(v)
+
         # 将历史记录统一 reshape 为列向量形式，便于线性代数运算。
         S_k_list = [i.reshape(-1, 1) for i in S_k_list]
         Y_k_list = [i.reshape(-1, 1) for i in Y_k_list]
@@ -207,18 +254,46 @@ class FLDetector(AggregatorBase):
         upper_mat = torch.cat([sigma_k * S_k_time_S_k, L_k], dim=1)
         lower_mat = torch.cat([L_k.T, -torch.diag(D_k_diag)], dim=1)
         mat = torch.cat([upper_mat, lower_mat], dim=0)
-        try:
-            mat_inv = torch.linalg.inv(mat)
-        except Exception:
-            # Fallback for singular/ill-conditioned matrix: add damping.
-            eps = torch.tensor(1e-6, device=mat.device, dtype=mat.dtype)
-            mat_inv = torch.linalg.inv(mat + eps * torch.eye(mat.shape[0], device=mat.device, dtype=mat.dtype))
 
         approx_prod = sigma_k * v
         p_mat = torch.cat([torch.matmul(curr_S_k.T, sigma_k * v),
                            torch.matmul(curr_Y_k.T, v)], dim=0)
-        approx_prod -= torch.matmul(torch.matmul(torch.cat([sigma_k *
-                                                            curr_S_k, curr_Y_k], dim=1), mat_inv), p_mat)
+
+        if not torch.isfinite(mat).all() or not torch.isfinite(p_mat).all():
+            return torch.zeros_like(v).squeeze()
+
+        basis_mat = torch.cat([sigma_k * curr_S_k, curr_Y_k], dim=1)
+        eye = torch.eye(mat.shape[0], device=mat.device, dtype=mat.dtype)
+        rhs = p_mat
+        solved = None
+
+        # Prefer linear solve over explicit inverse for numerical stability.
+        try:
+            solved = torch.linalg.solve(mat, rhs)
+        except Exception:
+            for eps in (1e-6, 1e-4, 1e-2, 1e-1):
+                try:
+                    solved = torch.linalg.solve(mat + eps * eye, rhs)
+                    break
+                except Exception:
+                    continue
+
+        if solved is None:
+            try:
+                solved = torch.linalg.lstsq(mat, rhs).solution
+            except Exception:
+                try:
+                    solved = torch.matmul(torch.linalg.pinv(mat), rhs)
+                except Exception:
+                    solved = torch.zeros_like(rhs)
+
+        if not torch.isfinite(solved).all():
+            solved = torch.zeros_like(rhs)
+
+        approx_prod -= torch.matmul(basis_mat, solved)
+
+        if not torch.isfinite(approx_prod).all():
+            return torch.zeros_like(v).squeeze()
 
         return approx_prod.squeeze()
 
@@ -240,6 +315,7 @@ class FLDetector(AggregatorBase):
             data = torch.as_tensor(data, dtype=torch.float32)
         if data.ndim == 1:
             data = data.reshape(-1, 1)
+        data = torch.nan_to_num(data, nan=0.0, posinf=1e6, neginf=-1e6)
         if not data.is_cuda:
             data = data.to(device="cuda", non_blocking=True)
         data = data.detach().contiguous()
@@ -282,6 +358,7 @@ class FLDetector(AggregatorBase):
             data_np = np.asarray(data, dtype=np.float32)
         if data_np.ndim == 1:
             data_np = data_np.reshape(-1, 1)
+        data_np = np.nan_to_num(data_np, nan=0.0, posinf=1e6, neginf=-1e6)
 
         estimator = KMeans(n_clusters=n_clusters, n_init=n_init, random_state=0)
         labels_np = estimator.fit_predict(data_np)
@@ -337,15 +414,23 @@ class FLDetector(AggregatorBase):
             if data.is_cuda:
                 data = data.cpu()
         data = normalize_data(data)
+        data = torch.nan_to_num(data, nan=0.0, posinf=1.0, neginf=0.0)
         if data.ndim == 1:
             data = data.reshape(-1, 1)
+        if data.shape[0] <= 1:
+            return 1
 
         gaps, s = [], []
         K_max = min(K_max, int(data.shape[0]))
+        if K_max <= 1:
+            return 1
 
         for k in range(1, K_max + 1):
             # 真实数据的簇内误差 (inertia)。
-            _, inertia = self._kmeans_fit_predict(data, n_clusters=k, n_init=10)
+            try:
+                _, inertia = self._kmeans_fit_predict(data, n_clusters=k, n_init=10)
+            except Exception:
+                return 1
 
             # 随机数据的簇内误差，用于近似空模型。
             fake_inertia = []
@@ -353,21 +438,34 @@ class FLDetector(AggregatorBase):
                 random_data = torch.rand(
                     (n, data.shape[1]), device=data.device, dtype=data.dtype
                 )
-                _, fake_inertia_k = self._kmeans_fit_predict(
-                    random_data, n_clusters=k, n_init=10
-                )
+                try:
+                    _, fake_inertia_k = self._kmeans_fit_predict(
+                        random_data, n_clusters=k, n_init=10
+                    )
+                except Exception:
+                    continue
                 fake_inertia.append(fake_inertia_k)
+            if len(fake_inertia) == 0:
+                return 1
 
             fake_inertia = torch.stack(fake_inertia)
+            fake_inertia = torch.nan_to_num(
+                fake_inertia, nan=1e-12, posinf=1e12, neginf=1e-12
+            )
+            inertia = torch.nan_to_num(
+                inertia, nan=1e-12, posinf=1e12, neginf=1e-12
+            )
             mean_fake_inertia = torch.mean(fake_inertia)
             gap = torch.log(mean_fake_inertia + 1e-12) - torch.log(inertia + 1e-12)
+            gap = torch.nan_to_num(gap, nan=0.0, posinf=0.0, neginf=0.0)
             gaps.append(gap)
 
             sd = torch.std(torch.log(fake_inertia + 1e-12), unbiased=False)
             coeff = torch.sqrt(
                 torch.tensor((1 + num_sampling) / num_sampling, device=data.device, dtype=data.dtype)
             )
-            s.append(sd * coeff)
+            s_item = torch.nan_to_num(sd * coeff, nan=0.0, posinf=0.0, neginf=0.0)
+            s.append(s_item)
 
         num_cluster = 0
         for k in range(1, K_max):

@@ -1,7 +1,7 @@
 # This file serves as the configurations for the benchmarking experiments, including the basic configuration and the parameters for all attacks and defenses that are going to be tested. You can copy this file and modify it to run your own single attack and defense experiments.
 seed: 4 # seed for reproducibility
 # basic configuration
-epochs: 300 # global epochs
+epochs: 3000 # global epochs
 algorithm: FedSGD # algorithm, FedSGD, FedAvg, FedOpt
 optimizer: SGD # optimizer for training
 momentum: 0.9
@@ -19,7 +19,7 @@ tail_cls_from: 4 # For class-imbalanced iid, the tail classes start from 4
 dirichlet_alpha: 0.5 # For non-iid, smaller alpha, stronger heterogeneity, normally use 0.1, 0.5, 0.9, 1
 cache_partition: False # whether to cache the partitioned client indices
 gpu_idx: [0] # Indices of GPU
-num_workers: 0
+num_workers: 4 # number of workers for data loading
 record_time: False
 
 # general attack settings
@@ -151,7 +151,7 @@ defenses:
           epsilon: 1.0e-6
     - defense: FLTrust
       defense_params:
-          num_sample: 100
+          num_sample: 500
     - defense: CenteredClipping
       defense_params:
           norm_threshold: 100

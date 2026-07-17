@@ -70,8 +70,8 @@ class ImageSynthesizer(Synthesizer):
             [transforms.ToTensor(), transforms.Normalize(self.args.mean, self.args.std)]
         )
 
-        # 根据数据集判断触发器图像模式：彩色 (RGB) 或灰度 (L)。
-        mode = "RGB" if self.args.dataset == "CIFAR10" else "L"
+        # 根据通道数判断触发器图像模式：彩色 (RGB) 或灰度 (L)。
+        mode = "RGB" if self.args.num_channels == 3 else "L"
 
         # 默认从 trigger_path 读取触发器；若外部传入 trigger 则使用传入对象。
         trigger_img = trigger or Image.open(self.trigger_path).convert(mode)

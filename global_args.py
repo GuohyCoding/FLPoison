@@ -73,6 +73,8 @@ def read_args():
                         help='milestone for learning rate scheduler')
     parser.add_argument('-num_clients', '--num_clients', type=int,
                         help='number of participating clients')
+    parser.add_argument('-sample_rate', '--sample_rate', type=float,
+                        help='fraction of clients sampled per round, range (0, 1], default 1.0 (all clients participate)')
     parser.add_argument('-bs', '--batch_size', type=int,
                         help='batch_size')
     parser.add_argument('-lr', '--learning_rate',
@@ -81,7 +83,7 @@ def read_args():
                         help='local global_epoch')
     parser.add_argument('-model', '--model', choices=all_models)
     parser.add_argument('-data', '--dataset',
-                        choices=['MNIST', 'FashionMNIST', 'CIFAR10', 'CINIC10', 'CIFAR100', 'EMNIST', 'CHMNIST'])
+                        choices=['MNIST', 'FashionMNIST', 'CIFAR10', 'CINIC10', 'CIFAR100', 'CIFAR20', 'CIFAR50', 'EMNIST', 'CHMNIST', '5GNIDD'])
     parser.add_argument('-dtb', '--distribution',
                         choices=['iid', 'class-imbalanced_iid', 'non-iid', 'pat', 'imbalanced_pat'])
     parser.add_argument('-dirichlet_alpha', '--dirichlet_alpha', type=float,
@@ -330,12 +332,30 @@ def single_preprocess(args):
     args.device = device
     args.num_adv = frac_or_int_to_int(args.num_adv, args.num_clients)
 
+    # 客户端采样比例：每轮随机抽取 sample_rate 比例的客户端参与训练，1.0 表示全员参与
+    args.sample_rate = float(getattr(args, 'sample_rate', None) or 1.0)
+    if not 0 < args.sample_rate <= 1:
+        raise ValueError(
+            f"sample_rate must be in (0, 1], got {args.sample_rate}")
+    if args.sample_rate < 1.0:
+        # 依赖逐客户端历史状态的防御假设每轮客户端固定，与每轮换人的采样机制不兼容
+        if args.defense in ('FoolsGold', 'FLDetector'):
+            raise ValueError(
+                f"Defense {args.defense} assumes a fixed client set every round "
+                f"and is incompatible with client sampling (sample_rate={args.sample_rate}).")
+        if args.defense in ('MultiKrum', 'Bulyan', 'DnC', 'Sifter', 'FLAME', 'Auror', 'DeepSight'):
+            print(
+                f"Warning: {args.defense} still uses global num_clients/num_adv; "
+                f"only Krum adapts n/f per round under client sampling.")
+
     # ensure attack_params and defense_params attributes exist. when there is no params, set it to None.
     ensure_attr(args, 'attack_params')
     ensure_attr(args, 'defense_params')
 
     # generate output path if not provided
-    args.output = f'./logs/{args.algorithm}/{args.dataset}_{args.model}/{args.distribution}/{args.dataset}_{args.model}_{args.distribution}_{args.attack}_{args.defense}_{args.epochs}_{args.num_clients}_{args.learning_rate}_{args.algorithm}.txt'
+    # 采样实验的日志加 _sr 后缀，避免与全员参与的日志互相覆盖或触发跳过
+    sr_suffix = '' if args.sample_rate >= 1.0 else f'_sr{args.sample_rate}'
+    args.output = f'./logs/{args.algorithm}/{args.dataset}_{args.model}/{args.distribution}/{args.dataset}_{args.model}_{args.distribution}_{args.attack}_{args.defense}_{args.epochs}_{args.num_clients}_{args.learning_rate}_{args.algorithm}{sr_suffix}.txt'
 
     # check output path, if exists, skip, otherwise create the directories
     os.makedirs(os.path.dirname(args.output), exist_ok=True)

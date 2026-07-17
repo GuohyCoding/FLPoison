@@ -1,0 +1,7 @@
+seed: 42, epochs: 1000, algorithm: FedSGD, optimizer: SGD, momentum: 0.9, weight_decay: 0.0005, num_clients: 100, batch_size: 16, learning_rate: 0.05, model: simplecnn, dataset: MNIST, distribution: iid, im_iid_gamma: 0.1, tail_cls_from: 4, dirichlet_alpha: 0.1, cache_partition: False, gpu_idx: [0], num_workers: 0, record_time: False, num_adv: 20, attack: COMPASS, defense: SignGuard, defense_params: {'lower_bound': 0.1, 'upper_bound': 3.0, 'selection_fraction': 0.1, 'clustering': 'MeanShift', 'random_seed': 2}, benchmark: False, sample_rate: 0.1, attack_params: {'scaling_factor': 3.0, 'important_magnitude': 9.0, 'unimportant_magnitude': 0.9}, num_training_sample: 60000, num_channels: 1, num_classes: 10, mean: (0.1307,), std: (0.3081,), device: cuda:0, output: ./logs/FedSGD/MNIST_simplecnn/iid/MNIST_simplecnn_iid_COMPASS_SignGuard_1000_100_0.05_FedSGD_sr0.1.txt
+
+Started on Wed Jul 15 12:17:31 2026
+Generating new indices
+Doing iid partition
+iid partition finished
+Data partitioned

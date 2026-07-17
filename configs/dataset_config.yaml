@@ -41,6 +41,20 @@ CIFAR100:
     mean: (0.5071, 0.4865, 0.4409)
     std: (0.2673, 0.2564, 0.2762)
 
+CIFAR20:
+    num_training_sample: 10000
+    num_channels: 3
+    num_classes: 20
+    mean: (0.5071, 0.4865, 0.4409)
+    std: (0.2673, 0.2564, 0.2762)
+
+CIFAR50:
+    num_training_sample: 25000
+    num_channels: 3
+    num_classes: 50
+    mean: (0.5071, 0.4865, 0.4409)
+    std: (0.2673, 0.2564, 0.2762)
+
 # [The EMNIST Dataset | NIST](https://www.nist.gov/itl/products-and-services/emnist-dataset)
 EMNIST:
     num_training_sample: 240000
@@ -75,3 +89,13 @@ TinyImageNet:
     num_dims: 64
     mean: (0.485, 0.456, 0.406)
     std: (0.229, 0.224, 0.225)
+
+# [5G-NIDD: A Comprehensive Network Intrusion Detection Dataset Generated over 5G Wireless Network]
+# https://ieee-dataport.org/documents/5g-nidd-...
+# 9 类多分类（Benign + 8 种攻击）；特征经 ANOVA 选取 Top-10 + Z-score 归一化，在 Dataset 内部完成。
+# 需手动下载 Encoded.csv 并放置于 data/5GNIDD/Encoded.csv
+5GNIDD:
+    num_training_sample: 851123  # 70% × 1,215,890（实测）
+    num_features: 10             # ANOVA Top-k 特征数量
+    num_classes: 9               # Benign + 8 种攻击（Attack Type 列: Benign/HTTPFlood/ICMPFlood/SYNFlood/SYNScan/SlowrateDoS/TCPConnectScan/UDPFlood/UDPScan）
+    eval_num_samples: 10000      # 每轮随机采样 10K 样本评估，与 MNIST 测试集规模相当（完整集 364K 开销过大）

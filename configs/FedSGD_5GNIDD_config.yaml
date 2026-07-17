@@ -1,0 +1,144 @@
+# 5G-NIDD × FLPoison 基准实验配置
+# 聚焦于模型投毒攻击 + 聚合防御，所有攻防组合均以 benchmark 模式自动枚举。
+#
+# 数据集: 5G-NIDD（9 类网络入侵检测，ANOVA Top-10 特征 + Z-score 归一化）
+# 模型:   mlp_tabular（256 → 128 → 9 MLP）
+# 须先将 Encoded.csv 放置于 data/5GNIDD/Encoded.csv
+
+seed: 42
+epochs: 1000
+algorithm: FedSGD
+optimizer: SGD
+momentum: 0.9
+weight_decay: 5.0e-4
+num_clients: 100
+batch_size: 64
+learning_rate: 0.05
+model: mlp_tabular
+dataset: 5GNIDD
+distribution: iid
+dirichlet_alpha: 0.5
+im_iid_gamma: 0.1
+tail_cls_from: 4
+cache_partition: False
+gpu_idx: [0]
+num_workers: 0
+record_time: False
+
+# 默认单次实验（不开 benchmark 时使用）
+num_adv: 0.20
+attack: NoAttack
+defense: Mean
+
+attacks:
+    # ---------- 模型投毒攻击（与数据模态无关，全部适用） ----------
+    - attack: IPM
+      attack_params:
+          scaling_factor: 0.5
+    - attack: ALIE
+    - attack: Gaussian
+      attack_params:
+          noise_mean: 0
+          noise_std: 1
+    - attack: Mimic
+      attack_params:
+          choice: 0
+    - attack: MinMax
+      attack_params:
+          gamma_init: 10
+          stop_threshold: 1.0e-5
+    - attack: MinSum
+      attack_params:
+          gamma_init: 10
+          stop_threshold: 1.0e-5
+    - attack: FangAttack
+      attack_params:
+          stop_threshold: 1.0e-5
+    - attack: COMPASS
+      attack_params:
+          scaling_factor: 3.0
+          important_magnitude: 9.0
+          unimportant_magnitude: 0.9
+    - attack: PoisonedFL
+      attack_params:
+          scaling_factor: 8.0
+    # ---------- 数据投毒（标签翻转，表格数据完全适用） ----------
+    - attack: LabelFlipping
+      attack_params:
+          attack_model: "targeted"
+          source_label: 0   # Benign → BruteForce
+          target_label: 1
+          attack_strategy: "continuous"
+    - attack: NoAttack
+
+defenses:
+    - defense: Mean
+    - defense: Krum
+      defense_params:
+          enable_check: False
+    - defense: MultiKrum
+      defense_params:
+          avg_percentage: 0.2
+          enable_check: False
+    - defense: TrimmedMean
+      defense_params:
+          beta: 0.1
+    - defense: Median
+    - defense: Bulyan
+      defense_params:
+          enable_check: False
+    - defense: RFA
+      defense_params:
+          num_iters: 3
+          epsilon: 1.0e-6
+    - defense: FLTrust
+      defense_params:
+          num_sample: 100
+    - defense: CenteredClipping
+      defense_params:
+          norm_threshold: 100
+          num_iters: 1
+    - defense: DnC
+      defense_params:
+          subsample_frac: 0.2
+          num_iters: 5
+          fliter_frac: 1.0
+    - defense: Bucketing
+      defense_params:
+          bucket_size: 2
+          selected_aggregator: "Krum"
+    - defense: SignGuard
+      defense_params:
+          lower_bound: 0.1
+          upper_bound: 3.0
+          selection_fraction: 0.1
+          clustering: "MeanShift"
+          random_seed: 2
+    - defense: LASA
+      defense_params:
+          norm_bound: 2
+          sign_bound: 1
+          sparsity: 0.3
+    - defense: Auror
+      defense_params:
+          indicative_threshold: 1.0e-4
+          indicative_find_epoch: 10
+    - defense: FoolsGold
+      defense_params:
+          epsilon: 1.0e-5
+          topk_ratio: 0.1
+    - defense: NormClipping
+      defense_params:
+          weakDP: True
+          norm_threshold: 3
+          noise_mean: 0
+          noise_std: 0.002
+    - defense: CRFL
+      defense_params:
+          norm_threshold: 3
+          noise_mean: 0
+          noise_std: 0.001
+    - defense: FLAME
+      defense_params:
+          gamma: 1.2e-5
+    - defense: MeanNorm

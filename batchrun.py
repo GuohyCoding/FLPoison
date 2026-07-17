@@ -113,32 +113,53 @@ def get_configs(dataset, algorithm, distribution, defense):
     """
     params = {
         "MNIST": {
-            "FedSGD": {"epoch": 1000, "lr": 0.05},
-            "FedOpt": {"epoch": 100, "lr": 0.01}
+            "FedSGD": {"num_clients": 100, "epoch": 1000, "lr": 0.05},
+            "FedOpt": {"num_clients": 100, "epoch": 100, "lr": 0.01}
         },
         "FashionMNIST": {
-            "FedSGD": {"epoch": 1000, "lr": 0.05},
-            "FedOpt": {"epoch": 100, "lr": 0.01}
+            "FedSGD": {"num_clients": 100, "epoch": 1000, "lr": 0.05},
+            "FedOpt": {"num_clients": 100, "epoch": 100, "lr": 0.01}
         },
         "CIFAR10": {
             "FedSGD": {
-                "epoch": 300, "lr": 0.05,
+                "num_clients": 10, "epoch": 1000, "lr": 0.05,
                 "non-iid": {
                     "defenses": ["Krum", "MultiKrum", "Bucketing", "Bulyan", "SignGuard", "DnC", "FLAME"],
                     "lr": 0.002
                 }
             },
             "FedOpt": {
-                "epoch": 300, "lr": 0.02,
+                "num_clients": 100, "epoch": 300, "lr": 0.02,
                 "non-iid": {
                     "defenses": ["Krum", "Bucketing"],
                     "lr": 0.002
                 }
             }
         },
+        "CINIC10": {
+            "FedSGD": {"num_clients": 10, "epoch": 1000, "lr": 0.05}
+        },
         "CIFAR100": {
             "FedSGD": {
-                "epoch": 300, "lr": 0.05,
+                "num_clients": 10, "epoch": 1000, "lr": 0.05,
+                "non-iid": {
+                    "defenses": ["Krum", "MultiKrum", "Bucketing", "Bulyan", "SignGuard", "DnC", "FLAME"],
+                    "lr": 0.002
+                }
+            }
+        },
+        "CIFAR20": {
+            "FedSGD": {
+                "num_clients": 20, "epoch": 1000, "lr": 0.05,
+                "non-iid": {
+                    "defenses": ["Krum", "MultiKrum", "Bucketing", "Bulyan", "SignGuard", "DnC", "FLAME"],
+                    "lr": 0.002
+                }
+            }
+        },
+        "CIFAR50": {
+            "FedSGD": {
+                "num_clients": 20, "epoch": 1000, "lr": 0.05,
                 "non-iid": {
                     "defenses": ["Krum", "MultiKrum", "Bucketing", "Bulyan", "SignGuard", "DnC", "FLAME"],
                     "lr": 0.002
@@ -146,21 +167,21 @@ def get_configs(dataset, algorithm, distribution, defense):
             }
         },
         "TinyImageNet": {
-            "FedSGD": {"epoch": 150, "lr": 0.05}
-        },
-        "FashionMNIST": {
-            "FedSGD": {"epoch": 1000, "lr": 0.05}
+            "FedSGD": {"num_clients": 50, "epoch": 150, "lr": 0.05}
         },
         "CHMNIST": {
-            "FedSGD": {"epoch": 150, "lr": 0.001}
+            "FedSGD": {"num_clients": 10, "epoch": 150, "lr": 0.001}
+        },
+        "5GNIDD": {
+            "FedSGD": {"num_clients": 100, "epoch": 500, "lr": 0.05}
         },
     }
 
     dataset_params = params.get(dataset, {})
-    num_clients = 20 if dataset in ["CIFAR10", "CIFAR100"] else 50
     algo_params = dataset_params.get(algorithm, {})
 
     if isinstance(algo_params, dict):
+        num_clients = algo_params["num_clients"]
         epoch = algo_params["epoch"]
         lr = algo_params["lr"]
 
@@ -221,6 +242,10 @@ def main(args):
     algorithms = args.algorithms
     gpu_idx = args.gpu_idx
     MAX_PROCESSES = args.max_processes
+    sample_rate = args.sample_rate
+    # 采样实验：命令追加 -sample_rate，日志名追加 _sr 后缀（与 single_preprocess 的命名保持一致）
+    sr_flag = f' -sample_rate {sample_rate}' if sample_rate < 1.0 else ''
+    sr_suffix = f'_sr{sample_rate}' if sample_rate < 1.0 else ''
     datasets_models = [(dataset, model)]
 
     # 检查当前工作目录是否位于或包含项目文件夹
@@ -246,8 +271,8 @@ def main(args):
                         num_clients, epoch, learning_rate = get_configs(
                             dataset, algorithm, distribution, defense)
 
-                        command = f'python -u main.py -config=./configs/{config_file} -data {dataset} -model {model} -e {epoch} -att {attack} -def {defense} -dtb {distribution} -alg {algorithm} -lr {learning_rate} -gidx {gpu_idx}'
-                        file_name = f'{dir}/logs/{algorithm}/{dataset}_{model}/{distribution}/{dataset}_{model}_{distribution}_{attack}_{defense}_{epoch}_{num_clients}_{learning_rate}_{algorithm}.txt'
+                        command = f'python -u main.py -config=./configs/{config_file} -data {dataset} -model {model} -e {epoch} -att {attack} -def {defense} -dtb {distribution} -alg {algorithm} -lr {learning_rate} -gidx {gpu_idx}{sr_flag}'
+                        file_name = f'{dir}/logs/{algorithm}/{dataset}_{model}/{distribution}/{dataset}_{model}_{distribution}_{attack}_{defense}_{epoch}_{num_clients}_{learning_rate}_{algorithm}{sr_suffix}.txt'
 
                         # 收集任务，稍后统一并行运行
                         tasks.append((command, file_name))
@@ -341,6 +366,8 @@ if __name__ == "__main__":
                         help="GPU index to use. Default is 1.")
     parser.add_argument('-maxp', '--max_processes', type=int, default=6,
                         help="Max number of process parallel. Default is 6.")
+    parser.add_argument('-sample_rate', '--sample_rate', type=float, default=1.0,
+                        help="Fraction of clients sampled per round, range (0, 1]. Default is 1.0 (all clients).")
     # attacks
     parser.add_argument('-attacks', '--attacks', nargs='+', default=['NoAttack', 'Gaussian', 'SignFlipping', 'IPM', 'ALIE', 'FangAttack', 'MinMax',
                         'MinSum',  'Mimic', 'LabelFlipping', 'BadNets', 'ModelReplacement', 'DBA', 'AlterMin', 'EdgeCase', 'Neurotoxin'], help="List of attacks to use.")

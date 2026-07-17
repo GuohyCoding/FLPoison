@@ -11,6 +11,51 @@ from datapreprocessor.cinic10 import CINIC10
 from datapreprocessor.chmnist import CHMNIST
 from plot_utils import plot_label_distribution
 from datapreprocessor.tinyimagenet import TinyImageNet
+from datapreprocessor.nidd5g import NIDD5G
+
+
+CIFAR100_FINE_SUBSET_SIZES = {
+    "CIFAR20": 20,
+    "CIFAR50": 50,
+}
+
+
+class CIFAR100FineSubset(Dataset):
+    """CIFAR100 fine-label 子集，并将标签重映射到连续的 0..K-1。"""
+
+    def __init__(self, dataset, num_classes):
+        self.dataset = dataset
+        self.transform = dataset.transform
+        self.target_transform = getattr(dataset, "target_transform", None)
+        self.selected_classes = list(range(num_classes))
+        self.class_to_new_label = {
+            old_label: new_label
+            for new_label, old_label in enumerate(self.selected_classes)
+        }
+
+        original_targets = np.asarray(dataset.targets)
+        mask = np.isin(original_targets, self.selected_classes)
+        self.data = dataset.data[mask]
+        self.targets = torch.tensor(
+            [self.class_to_new_label[int(label)] for label in original_targets[mask]],
+            dtype=torch.long,
+        )
+        self.classes = [dataset.classes[label] for label in self.selected_classes]
+        self.class_to_idx = {class_name: idx for idx, class_name in enumerate(self.classes)}
+
+    def __len__(self):
+        return len(self.targets)
+
+    def __getitem__(self, idx):
+        image = Image.fromarray(self.data[idx])
+        target = int(self.targets[idx])
+
+        if self.transform is not None:
+            image = self.transform(image)
+        if self.target_transform is not None:
+            target = self.target_transform(target)
+
+        return image, target
 
 
 def load_data(args):
@@ -60,6 +105,14 @@ def load_data(args):
                                                          download=True, transform=trans)
         test_dataset = eval(f"datasets.{args.dataset}")(root=data_directory, train=False,
                                                         download=True, transform=test_trans)
+    elif args.dataset in CIFAR100_FINE_SUBSET_SIZES:
+        train_dataset = datasets.CIFAR100(root=data_directory, train=True,
+                                          download=True, transform=trans)
+        test_dataset = datasets.CIFAR100(root=data_directory, train=False,
+                                         download=True, transform=test_trans)
+        subset_size = CIFAR100_FINE_SUBSET_SIZES[args.dataset]
+        train_dataset = CIFAR100FineSubset(train_dataset, subset_size)
+        test_dataset = CIFAR100FineSubset(test_dataset, subset_size)
     elif args.dataset in ["CHMNIST", "CINIC10", "TinyImageNet"]:
         """
         dataset in custom datasets, such as CHMNIST, CINIC10, TinyImageNet
@@ -68,6 +121,10 @@ def load_data(args):
                                 transform=trans)
         test_dataset = eval(args.dataset)(root=data_directory, train=False, download=True,
                                transform=test_trans)
+    elif args.dataset == "5GNIDD":
+        num_features = getattr(args, "num_features", 10)
+        train_dataset = NIDD5G(root=data_directory, train=True, num_features=num_features)
+        test_dataset = NIDD5G(root=data_directory, train=False, num_features=num_features)
     else:
         raise ValueError("Dataset not implemented yet")
 
@@ -201,8 +258,8 @@ def get_transform(args):
             transforms.Normalize(args.mean, args.std)
         ])
         test_trans = train_tran
-    elif args.dataset in ["CIFAR10", "CIFAR100", "TinyImageNet"]:
-        args.num_dims = 32 if args.dataset in ['CIFAR10', 'CIFAR100'] else 64
+    elif args.dataset in ["CIFAR10", "CIFAR100", "CIFAR20", "CIFAR50", "TinyImageNet"]:
+        args.num_dims = 32 if args.dataset in ['CIFAR10', 'CIFAR100', 'CIFAR20', 'CIFAR50'] else 64
         # data augmentation
         train_tran = transforms.Compose([
             transforms.RandomCrop(args.num_dims, padding=4),
@@ -214,6 +271,10 @@ def get_transform(args):
             transforms.ToTensor(),
             transforms.Normalize(args.mean, args.std)
         ])
+    elif args.dataset == "5GNIDD":
+        # 表格数据：归一化已在 Dataset 内部完成，无需 torchvision 变换
+        train_tran = None
+        test_trans = None
     else:
         raise ValueError("Dataset not implemented yet")
 
@@ -436,9 +497,16 @@ class Partition(Dataset):
         # 对 CHMNIST 这类只有 __getitem__ 的数据集，退化为按原始索引取样。
         if hasattr(dataset, "data"):
             self.data = dataset.data[self.indices]
-            # (N, C, H, W) or (N, H, W) for MNIST-like grey images, mode='L'; CIFAR10-like color images, mode='RGB'
-            self.mode = 'L' if len(self.data.shape) == 3 else 'RGB'
+            # 表格数据：FloatTensor 且形状为 2D (N, features)
+            if isinstance(self.data, torch.Tensor) and self.data.dtype == torch.float32 and self.data.dim() == 2:
+                self.is_tabular = True
+                self.mode = None
+            else:
+                self.is_tabular = False
+                # (N, C, H, W) or (N, H, W) for MNIST-like grey images, mode='L'; CIFAR10-like color images, mode='RGB'
+                self.mode = 'L' if len(self.data.shape) == 3 else 'RGB'
         else:
+            self.is_tabular = False
             self.mode = None
         self.transform = transform
         self.poison = False
@@ -470,14 +538,18 @@ class Partition(Dataset):
         """
         if self.data is not None:
             image, target = self.data[idx], self.targets[idx]
-            # doing this so that it is consistent with all other datasets
-            # convert image to numpy array. for MNIST-like dataset, image is torch tensor, for CIFAR10-like dataset, image type is numpy array.
-            if not isinstance(image, (np.ndarray, np.generic)):
-                image = image.numpy()
-            # to return a PIL Image
-            image = Image.fromarray(image, mode=self.mode)
-            if self.transform:
-                image = self.transform(image)
+            if self.is_tabular:
+                # 表格数据直接以 FloatTensor 返回，跳过 PIL 转换流程
+                pass
+            else:
+                # doing this so that it is consistent with all other datasets
+                # convert image to numpy array. for MNIST-like dataset, image is torch tensor, for CIFAR10-like dataset, image type is numpy array.
+                if not isinstance(image, (np.ndarray, np.generic)):
+                    image = image.numpy()
+                # to return a PIL Image
+                image = Image.fromarray(image, mode=self.mode)
+                if self.transform:
+                    image = self.transform(image)
         else:
             source_idx = self.indices[idx]
             source_idx = int(source_idx.item()) if torch.is_tensor(source_idx) else int(source_idx)

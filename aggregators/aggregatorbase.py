@@ -4,6 +4,7 @@
 聚合器负责在服务器端对客户端上传的模型更新或梯度做鲁棒融合，本基类约定了
 通用的初始化、参数注入与聚合接口，具体策略需在子类中实现。
 """
+import math
 
 
 class AggregatorBase():
@@ -54,6 +55,27 @@ class AggregatorBase():
         for key, value in self.defense_params.items():
             # 将参数逐项绑定到实例属性，方便子类在计算中直接访问。
             setattr(self, key, value)
+
+    def effective_n_f(self, updates):
+        """
+        按本轮实际参与者数量折算当轮的 (n_t, f_t)。
+
+        启用客户端采样后，每轮参与者只有 num_clients 的一个子集，
+        直接使用全局的 num_clients/num_adv 会导致鲁棒聚合公式失真。
+        本方法保持"恶意比例"假设不变：n_t 取更新矩阵的行数，
+        f_t = ceil(n_t * num_adv / num_clients)（向上取整，宁可高估攻击者）。
+        全员参与（sample_rate=1.0）时恰好退化为 (num_clients, num_adv)，
+        行为与未启用采样完全一致。
+
+        参数:
+            updates (numpy.ndarray | torch.Tensor): 形状 [本轮参与者数, 参数维度]。
+
+        返回:
+            Tuple[int, int]: (n_t 本轮参与者数, f_t 本轮拜占庭数量上界估计)。
+        """
+        n_t = len(updates)
+        f_t = math.ceil(n_t * self.args.num_adv / self.args.num_clients)
+        return n_t, f_t
 
     def aggregate(self, updates, **kwargs):
         """

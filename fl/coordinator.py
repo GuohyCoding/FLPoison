@@ -8,6 +8,7 @@
 """
 
 from collections import OrderedDict
+import torch
 from .client import Client
 from attackers import get_attacker_handler
 from datapreprocessor.data_utils import subset_by_idx
@@ -171,7 +172,14 @@ def evaluate(the_server, test_dataset, args, global_epoch):
     if imbalanced_flag:
         test_keys.insert(1, 'Tail Acc')
 
-    test_loader = the_server.get_dataloader(test_dataset, train_flag=False)
+    # 当测试集过大时（如 5GNIDD 364K 样本），随机采样固定数量进行评估，保持每轮连续输出
+    eval_num_samples = int(getattr(args, "eval_num_samples", -1))
+    if eval_num_samples > 0 and len(test_dataset) > eval_num_samples:
+        indices = torch.randperm(len(test_dataset))[:eval_num_samples].tolist()
+        eval_dataset = torch.utils.data.Subset(test_dataset, indices)
+    else:
+        eval_dataset = test_dataset
+    test_loader = the_server.get_dataloader(eval_dataset, train_flag=False)
     clean_test = the_server.test(
         the_server.global_model, test_loader, imbalanced=imbalanced_flag)
 

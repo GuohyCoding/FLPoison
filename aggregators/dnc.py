@@ -8,6 +8,7 @@ from aggregators.aggregator_utils import prepare_grad_updates, wrapup_aggregated
 from aggregators.aggregatorbase import AggregatorBase
 import numpy as np
 import torch
+import warnings
 from aggregators import aggregator_registry
 
 
@@ -51,6 +52,58 @@ class DnC(AggregatorBase):
         self.update_and_set_attr()
         # DnC 原论文假设客户端上传梯度，默认针对 FedSGD 场景。
         self.algorithm = "FedSGD"
+
+    def _stable_principal_direction(self, centered_grads):
+        """
+        为 DnC 提供更稳定的主方向估计，避免病态矩阵导致 SVD 直接崩溃。
+
+        优先尝试原始设备上的 SVD；若失败则退化到 CPU + float64，
+        仅对客户端数规模的 Gram 矩阵做特征分解，避免高维参数下卡死。
+        """
+        finite_mask = torch.isfinite(centered_grads)
+        if not torch.all(finite_mask):
+            warnings.warn(
+                "DnC received non-finite gradients; replacing NaN/Inf before decomposition.",
+                RuntimeWarning,
+            )
+            centered_grads = torch.nan_to_num(
+                centered_grads, nan=0.0, posinf=1e6, neginf=-1e6
+            )
+
+        # 完全退化为零矩阵时，任选一个方向即可，避免后续分解报错。
+        if torch.count_nonzero(centered_grads).item() == 0:
+            v = torch.zeros(centered_grads.shape[1], device=centered_grads.device, dtype=centered_grads.dtype)
+            v[0] = 1.0
+            return v
+
+        try:
+            _, _, Vh = torch.linalg.svd(centered_grads, full_matrices=False)
+            return Vh[0, :]
+        except torch.linalg.LinAlgError:
+            warnings.warn(
+                "DnC SVD did not converge on the current device; falling back to CPU float64 eigendecomposition.",
+                RuntimeWarning,
+            )
+
+        centered_cpu = centered_grads.detach().to(device="cpu", dtype=torch.float64)
+        left_gram = centered_cpu.matmul(centered_cpu.transpose(0, 1))
+
+        # 这里使用 n x n 的左 Gram 矩阵，其中 n 是客户端数，远小于参数维度 d。
+        eye = torch.eye(left_gram.shape[0], dtype=left_gram.dtype, device=left_gram.device)
+        diag_scale = torch.trace(left_gram).abs().item() / max(left_gram.shape[0], 1)
+        jitter = max(diag_scale, 1.0) * 1e-12
+        left_gram = left_gram + jitter * eye
+
+        _, eigvecs = torch.linalg.eigh(left_gram)
+        u_cpu = eigvecs[:, -1]
+        v_cpu = centered_cpu.transpose(0, 1).matmul(u_cpu)
+        v_norm = torch.linalg.norm(v_cpu)
+        if not torch.isfinite(v_cpu).all() or v_norm.item() == 0:
+            v_cpu = torch.zeros(centered_cpu.shape[1], dtype=centered_cpu.dtype, device=centered_cpu.device)
+            v_cpu[0] = 1.0
+        else:
+            v_cpu = v_cpu / v_norm
+        return v_cpu.to(device=centered_grads.device, dtype=centered_grads.dtype)
 
     def aggregate(self, updates, **kwargs):
         """
@@ -105,8 +158,7 @@ class DnC(AggregatorBase):
             centered_grads = sampled_grads - mu
 
             # 3. 通过奇异值分解获取主奇异向量，用于度量异常方向的投影强度。
-            _, _, Vh = torch.linalg.svd(centered_grads, full_matrices=False)
-            v = Vh[0, :]
+            v = self._stable_principal_direction(centered_grads)
             # 根据投影长度平方作为异常得分，越大越可能来自恶意客户端。
             score = torch.matmul(centered_grads, v)**2
 

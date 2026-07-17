@@ -132,12 +132,14 @@ class Server(Worker):
         self.algorithm = get_algorithm_handler(
             algorithm)(self.args, self.global_model)
 
-    def collect_updates(self, global_epoch):
+    def collect_updates(self, global_epoch, participants=None):
         """
-        收集所有客户端在当前全局轮次上报的更新向量。
+        收集客户端在当前全局轮次上报的更新向量。
 
         参数:
             global_epoch (int): 当前全局通信轮次编号。
+            participants (List[Client] | None): 本轮实际参与的客户端子集；
+                为 None 时收集全部客户端（保持原有全员参与行为）。
         返回:
             None: 更新结果存储在 `self.client_updates` 数组中。
         异常:
@@ -164,10 +166,11 @@ class Server(Worker):
                 - 参考书籍: 《Federated Learning》相关章节。
         """
         self.global_epoch = global_epoch
-        # 将各客户端的更新向量堆叠为二维数组，供聚合器统一处理
+        # 将各客户端的更新向量堆叠为二维数组，供聚合器统一处理；
+        # 启用客户端采样时只收集本轮参与者的更新
         device = self.global_weights_vec.device
         updates = []
-        for client in self.clients:
+        for client in (participants if participants is not None else self.clients):
             upd = client.update
             if torch.is_tensor(upd):
                 upd = upd.to(device=device).reshape(-1)

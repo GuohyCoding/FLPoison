@@ -84,20 +84,44 @@ def fl_run(args):
     coordinator.set_fl_algorithm(args, the_server, clients)
     args.logger.info("Clients and server are initialized")
     args.logger.info("Starting Training...")
+
+    # 客户端采样（方案 B：每轮重抽、跨运行可复现）。
+    # 使用独立于全局随机状态的专用 RNG：训练/数据加载消耗的是全局 RNG，
+    # 与抽样互不干扰，因此同一 seed 下第 t 轮抽到的客户端跨运行完全一致。
+    sample_rate = float(getattr(args, "sample_rate", 1.0))
+    num_sampled = max(1, int(len(clients) * sample_rate))
+    sample_rng = np.random.default_rng(args.seed)
+    if num_sampled < len(clients):
+        args.logger.info(
+            f"Client sampling enabled: {num_sampled}/{len(clients)} clients per round "
+            f"(sample_rate={sample_rate}, seed={args.seed})")
+
     prev_aggregated_update = None
     low_acc_streak = 0
-    # XXX:设置最大运行时间，避免单次实验过长（如攻击未成功导致持续训练）。此处设置为 300 分钟（5 小时）。
-    max_runtime_seconds = 300 * 60
+    _diverge_warned = False
+    # 设置最大运行时间，避免单次实验过长（如攻击未成功导致持续训练）。此处设置为 300 分钟（5 小时）。
+    max_runtime_seconds = 180 * 60
+    # 当测试损失爆炸到远超正常训练范围时，视为训练已发散并提前终止。
+    max_test_loss = float(getattr(args, "max_test_loss", 1.0e6))
+    _loss_cap = 10000.0
     for global_epoch in range(args.epochs):
         epoch_msg = f"Epoch {global_epoch:<3}"
         # print(f"Global epoch {global_epoch} begin")
         # server dispatches numpy version global weights 1d vector to clients
         global_weights_vec = the_server.global_weights_vec
 
+        # 抽取本轮参与训练的客户端子集；全员参与时直接复用完整列表且不消耗抽样 RNG
+        if num_sampled < len(clients):
+            selected_idx = sorted(sample_rng.choice(
+                len(clients), size=num_sampled, replace=False).tolist())
+            selected_clients = [clients[i] for i in selected_idx]
+        else:
+            selected_clients = clients
+
         # clients' local training: broadcast, fit locally, store statistics for logging.
         # 客户端本地训练：先拉取新模型，再独立迭代若干 local epochs，并记录训练指标以便聚合与日志输出。
         avg_train_acc, avg_train_loss = [], []
-        for client in clients:
+        for client in selected_clients:
             # pull the latest global model before each local update
             # 拉取最新全局模型，确保所有客户端从同一权重出发。
             client.load_global_model(global_weights_vec)
@@ -118,11 +142,13 @@ def fl_run(args):
             low_acc_streak = 0
         epoch_msg += f"  Train Acc: {avg_train_acc:.4f}  Train loss: {avg_train_loss:.4f}  "
 
-        # perform post-training attacks, for omniscient model poisoning attack, pass all clients
-        omniscient_attack(clients)
+        # perform post-training attacks, for omniscient model poisoning attack.
+        # 只传入本轮被抽中的客户端：全知攻击者只能看到实际参与者的更新，
+        # 避免读取未参与客户端的陈旧 update。
+        omniscient_attack(selected_clients)
 
-        # server collects weights from clients
-        the_server.collect_updates(global_epoch)
+        # server collects weights from the sampled clients
+        the_server.collect_updates(global_epoch, selected_clients)
         the_server.aggregation()  # run the configured robust mean/aggregator
 
         # # XXX：测试当前轮和上一轮的方向；
@@ -154,20 +180,36 @@ def fl_run(args):
         # 若存在后门攻击，此处额外统计 ASR/主任务准确率等指标，用于衡量防御效果。
         test_stats = coordinator.evaluate(
             the_server, test_dataset, args, global_epoch)
+        # 将 nan/inf 和超大值统一截断为 _loss_cap，并只在首次发散时打印一次警告
+        capped_stats = {}
+        for key, value in test_stats.items():
+            fv = float(value)
+            if not np.isfinite(fv) or fv > _loss_cap:
+                capped_stats[key] = _loss_cap
+            else:
+                capped_stats[key] = fv
+
+        test_loss_value = capped_stats.get("Test loss")
+        if test_loss_value is not None and test_loss_value >= _loss_cap and not _diverge_warned:
+            _diverge_warned = True
+            args.logger.info(
+                f"Epoch {global_epoch:<3} Non-finite / overflow test loss detected. "
+                f"Capping to {_loss_cap:.0f} for remaining epochs."
+            )
 
         # print the training and testing results of the current global_epoch
         # 输出当前全局轮的训练/测试统计信息，便于追踪收敛与攻击成效。
         epoch_msg += "\t".join(
-            [f"{key}: {value:.4f}" for key, value in test_stats.items()])
+            [f"{key}: {value:.4f}" for key, value in capped_stats.items()])
         
-        # XX：提前终止
-        if low_acc_streak >= 50:
-            epoch_msg += "\nAttack succeeded."
-            args.logger.info(epoch_msg)
-            gc.collect()
-            break
+        # XX：提前终止（在 200 轮后才生效）
+        # if global_epoch > 200 and low_acc_streak >= 50:
+        #     epoch_msg += "\nAttack succeeded."
+        #     args.logger.info(epoch_msg)
+        #     gc.collect()
+        #     break
 
-        if (time.time() - start_time) >= max_runtime_seconds:
+        if global_epoch > 200 and (time.time() - start_time) >= max_runtime_seconds:
             epoch_msg += "\nMax runtime reached. Exiting training loop."
             args.logger.info(epoch_msg)
             gc.collect()
@@ -186,6 +228,11 @@ def fl_run(args):
     #     print(
     #         f"Client {client.worker_id} local cos avg: {avg_cos:.6f}"
     #     )
+
+    # Flush any MyTest artifacts once after training ends (avoids per-round disk writes).
+    for client in clients:
+        if client.category == "attacker" and hasattr(client, "finalize"):
+            client.finalize()
 
     if args.record_time:
         # 可选：记录每个客户端与服务器端在通信/训练阶段的耗时，便于性能评估。

@@ -1,0 +1,14 @@
+seed: 42, epochs: 1000, algorithm: FedSGD, optimizer: SGD, momentum: 0.9, weight_decay: 0.0005, num_clients: 100, batch_size: 16, learning_rate: 0.05, model: simplecnn, dataset: MNIST, distribution: iid, im_iid_gamma: 0.1, tail_cls_from: 4, dirichlet_alpha: 0.1, cache_partition: False, gpu_idx: [0], num_workers: 0, record_time: False, num_adv: 20, attack: COMPASS, defense: LASA, defense_params: {'norm_bound': 2, 'sign_bound': 1, 'sparsity': 0.3}, benchmark: False, sample_rate: 0.1, attack_params: {'scaling_factor': 3.0, 'important_magnitude': 9.0, 'unimportant_magnitude': 0.9}, num_training_sample: 60000, num_channels: 1, num_classes: 10, mean: (0.1307,), std: (0.3081,), device: cuda:0, output: ./logs/FedSGD/MNIST_simplecnn/iid/MNIST_simplecnn_iid_COMPASS_LASA_1000_100_0.05_FedSGD_sr0.1.txt
+
+Started on Wed Jul 15 12:14:12 2026
+Generating new indices
+Doing iid partition
+iid partition finished
+Data partitioned
+Clients and server are initialized
+Starting Training...
+Client sampling enabled: 10/100 clients per round (sample_rate=0.1, seed=42)
+Epoch 0    Train Acc: 0.1250  Train loss: 0.1439  Test Acc: 0.0990	Test loss: 0.1403
+Epoch 1    Train Acc: 0.0813  Train loss: 0.1416  Test Acc: 0.3447	Test loss: 0.1376
+Epoch 2    Train Acc: 0.3312  Train loss: 0.1387  Test Acc: 0.2501	Test loss: 0.1339
+Epoch 3    Train Acc: 0.2500  Train loss: 0.1332  Test Acc: 0.2631	Test loss: 0.1258

@@ -15,7 +15,8 @@ model_categories = {
     "grey": ["lr"],
     "adaptive": ["lenet", "lenet_bn"],  # 1(grey) or 3(rgb) channels
     "rgb": ["resnet18", "resnet34", "resnet50", "resnet101", "resnet152", "vgg11", "vgg13", "vgg16", "vgg19"],
-    "handy": ["simplecnn"]
+    "handy": ["simplecnn"],
+    "tabular": ["mlp_tabular"],  # 表格数据模型，输入为数值特征向量
 }
 
 
@@ -37,6 +38,9 @@ def get_model(args):
         model = model_registry[args.model](num_classes=args.num_classes)
     elif args.model == "simplecnn":
         model = model_registry[args.model](input_size=(args.num_channels, args.num_dims, args.num_dims), num_classes=args.num_classes)
+    elif args.model in model_categories["tabular"]:
+        model = model_registry[args.model](
+            input_dim=args.num_features, num_classes=args.num_classes)
     else:
         raise NotImplementedError(
             f"Model not implemented, please choose from {all_models}")
